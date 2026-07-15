@@ -1,0 +1,9 @@
+web/node_modules/
+web/.svelte-kit/
+dist/*.exe
+conversations/
+models/
+bin/
+config.json
+.env
+*.log
