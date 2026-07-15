@@ -1,5 +1,6 @@
 web/node_modules/
 web/.svelte-kit/
+web/build/
 dist/*.exe
 conversations/
 models/
