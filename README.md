@@ -1,8 +1,21 @@
+<div align="center">
+
 # LocalAI Hub
 
 **Run open-source LLMs on any Windows PC — no Docker, no Python, no cloud, no terminal.**
 
 [![Build](https://github.com/delta574/localai-hub/actions/workflows/build.yml/badge.svg)](https://github.com/delta574/localai-hub/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go)](https://go.dev)
+[![Windows](https://img.shields.io/badge/Windows-0078D6?logo=windows)](https://github.com/delta574/localai-hub/actions)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux)](https://github.com/delta574/localai-hub/actions)
+[![macOS](https://img.shields.io/badge/macOS-000000?logo=apple)](https://github.com/delta574/localai-hub/actions)
+
+[Quick Start](#-quick-start) · [Features](#-features) · [API](#-for-developers) · [Build](#-build-from-source) · [FAQ](#-faq)
+
+<img src="docs/screenshots/chat.png" alt="LocalAI Hub chat interface" width="700"/>
+
+</div>
 
 One 3.5 MB `.exe`. Double-click. Browser opens. Chat.
 
@@ -10,22 +23,7 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 
 ---
 
-## Features
-
-- **Single binary** — 3.5 MB `.exe`, zero dependencies. No Electron, no Node.js, no Python runtime.
-- **Auto-setup** — Downloads `llama-server` (inference engine) and models from HuggingFace on first run.
-- **One-click model install** — Pick from 5 curated GGUF models sized for 2–4 GB RAM. Download with progress bar, auto-resume on interruption.
-- **Chat UI** — Streaming token-by-token responses, markdown rendering, conversation history.
-- **Conversation management** — Create, select, and delete conversations. Auto-saved as JSON files.
-- **OpenAI-compatible API** — `POST /v1/chat/completions` — use with any OpenAI client.
-- **USB portable** — All data (`models/`, `conversations/`, `config.json`) lives alongside the `.exe`. Plug the folder into any Windows PC and run.
-- **Hardware-aware** — Detects RAM, CPU cores, and free disk space. Recommends the best model for your machine.
-- **Privacy** — 100% offline after model download. No data leaves your computer.
-- **Customizable** — System prompt, temperature, max tokens, context size.
-
----
-
-## Quick Start
+## ⚡ Quick Start
 
 ### Option A: Portable .exe (recommended)
 
@@ -43,17 +41,27 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 2. Run the installer — it adds a Start Menu shortcut and an uninstaller entry.
 3. Launch from Start Menu. Same experience as above.
 
+> [!TIP]
 > All data (`models/`, `conversations/`, `config.json`) is stored alongside the `.exe`. To switch PCs, copy the entire folder to a USB drive.
 
 ---
 
-## Screenshots
+## ✨ Features
 
-*(Coming soon — setup wizard, chat page, models page)*
+- **Single binary** — 3.5 MB `.exe`, zero dependencies. No Electron, no Node.js, no Python runtime.
+- **Auto-setup** — Downloads `llama-server` (inference engine) and models from HuggingFace on first run.
+- **One-click model install** — Pick from 5 curated GGUF models sized for 2–4 GB RAM. Download with progress bar, auto-resume on interruption.
+- **Chat UI** — Streaming token-by-token responses, markdown rendering, conversation history.
+- **Conversation management** — Create, select, and delete conversations. Auto-saved as JSON files.
+- **OpenAI-compatible API** — `POST /v1/chat/completions` — use with any OpenAI client.
+- **USB portable** — All data lives alongside the `.exe`. Plug the folder into any Windows PC and run.
+- **Hardware-aware** — Detects RAM, CPU cores, and free disk space. Recommends the best model for your machine.
+- **Privacy** — 100% offline after model download. No data leaves your computer.
+- **Customizable** — System prompt, temperature, max tokens, context size.
 
 ---
 
-## System Requirements
+## 🖥️ System Requirements
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
@@ -67,7 +75,29 @@ Linux and macOS are also supported (cross-compiled binaries available).
 
 ---
 
-## For Developers
+## 📦 Curated Models
+
+| Model | Size | Min RAM | Quality |
+|-------|------|---------|---------|
+| Phi-4-mini 3.8B | ~2.5 GB | 4 GB | ★★★★ |
+| Qwen3 3B | ~2.0 GB | 4 GB | ★★★★ |
+| Llama 3.2 3B | ~2.5 GB | 4 GB | ★★★★ |
+| Gemma 3 1B | ~0.7 GB | 2 GB | ★★★ |
+| Qwen3 1.5B | ~1.0 GB | 2 GB | ★★★ |
+
+All models are GGUF format downloaded directly from HuggingFace Hub.
+
+---
+
+## 📸 Screenshots
+
+| Chat | Models | Settings |
+|------|--------|----------|
+| <img src="docs/screenshots/chat.png" alt="Chat interface" width="300"/> | <img src="docs/screenshots/models.png" alt="Model management" width="300"/> | <img src="docs/screenshots/settings.png" alt="Settings page" width="300"/> |
+
+---
+
+## 🔧 For Developers
 
 ### OpenAI-Compatible API
 
@@ -111,7 +141,8 @@ for chunk in response:
 | `GET` | `/v1/models` | List installed models |
 | `POST` | `/v1/chat/completions` | Chat completion (stream or JSON) |
 
-**Management API:**
+<details>
+<summary>Management API endpoints</summary>
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -127,23 +158,11 @@ for chunk in response:
 | `GET` | `/api/config` | Get current settings |
 | `PUT` | `/api/config` | Update settings |
 
----
-
-## Curated Models
-
-| Model | Size | Min RAM | Quality |
-|-------|------|---------|---------|
-| Phi-4-mini 3.8B | ~2.5 GB | 4 GB | ★★★★ |
-| Qwen3 3B | ~2.0 GB | 4 GB | ★★★★ |
-| Llama 3.2 3B | ~2.5 GB | 4 GB | ★★★★ |
-| Gemma 3 1B | ~0.7 GB | 2 GB | ★★★ |
-| Qwen3 1.5B | ~1.0 GB | 2 GB | ★★★ |
-
-All models are GGUF format downloaded directly from HuggingFace Hub.
+</details>
 
 ---
 
-## Build from Source
+## 🏗️ Build from Source
 
 ### Prerequisites
 
@@ -184,7 +203,7 @@ dist/LocalAI.exe --port 8080
 
 ---
 
-## Project Structure
+## 🗺️ Project Structure
 
 ```
 localai-hub/
@@ -225,6 +244,7 @@ localai-hub/
 │   ├── LocalAI.exe
 │   └── LocalAI_Hub_Setup.exe
 │
+├── docs/screenshots/          # README screenshots
 ├── README.md
 ├── LICENSE
 ├── PRD.md
@@ -233,7 +253,7 @@ localai-hub/
 
 ---
 
-## Tech Stack
+## 🔩 Tech Stack
 
 | Layer | Technology | Why |
 |-------|-----------|-----|
@@ -248,13 +268,29 @@ localai-hub/
 
 ---
 
-## License
+## ❓ FAQ
 
-[MIT](LICENSE) — free for any use, personal or commercial.
+**What models can I run?**
+5 curated GGUF models from 1B to 3.8B parameters. The setup wizard recommends the best one for your machine based on available RAM.
+
+**Does it need internet?**
+Only for the first run (to download `llama-server` and your chosen model). After that, 100% offline.
+
+**Can I use a GPU?**
+Not required. All models run on CPU via llama.cpp. GPU support is planned.
+
+**Is my data private?**
+Yes. All processing is local. No data ever leaves your computer after the initial model download.
+
+**Can I run this from a USB drive?**
+Yes. All data (`models/`, `conversations/`, `config.json`) sits alongside the `.exe`. Copy the folder to any Windows PC and run.
+
+**Why 3.5 MB?**
+No Electron, no Python runtime — just Go with the SvelteKit frontend embedded via `//go:embed`.
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Issues and pull requests welcome. This is a small project — keep changes focused and minimal.
 
@@ -262,3 +298,13 @@ Issues and pull requests welcome. This is a small project — keep changes focus
 2. Create a feature branch (`git checkout -b feature/your-feature`)
 3. Commit your changes
 4. Push and open a PR
+
+---
+
+## 📄 License
+
+[MIT](LICENSE) — free for any use, personal or commercial.
+
+---
+
+[![Star History Chart](https://api.star-history.com/svg?repos=delta574/localai-hub&type=Date)](https://star-history.com/#delta574/localai-hub&Date)
