@@ -1,10 +1,13 @@
 web/node_modules/
 web/.svelte-kit/
 web/build/
-dist/*.exe
+/dist/
+/docs/
 /conversations/
 /models/
 /bin/
 config.json
 .env
 *.log
+stdout.txt
+stderr.txt

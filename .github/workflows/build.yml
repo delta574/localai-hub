@@ -17,10 +17,15 @@ jobs:
           node-version: '22'
           cache-dependency-path: web/package-lock.json
 
-      - name: Build SPA
+      - name: Install & check SPA
         run: |
           cd web
           npm ci
+          npm run svelte-check
+
+      - name: Build SPA
+        run: |
+          cd web
           npm run build
 
       - name: Setup Go
