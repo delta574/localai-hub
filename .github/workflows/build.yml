@@ -21,6 +21,7 @@ jobs:
         run: |
           cd web
           npm ci
+          npx svelte-kit sync
           npm run svelte-check
 
       - name: Build SPA
