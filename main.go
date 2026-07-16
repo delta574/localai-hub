@@ -14,12 +14,12 @@ import (
 	"runtime"
 	"time"
 
-	"localai-hub/internal/api"
-	"localai-hub/internal/config"
-	"localai-hub/internal/download"
-	"localai-hub/internal/hardware"
-	"localai-hub/internal/llm"
-	"localai-hub/internal/server"
+	"github.com/delta574/localai-hub/internal/api"
+	"github.com/delta574/localai-hub/internal/config"
+	"github.com/delta574/localai-hub/internal/download"
+	"github.com/delta574/localai-hub/internal/hardware"
+	"github.com/delta574/localai-hub/internal/llm"
+	"github.com/delta574/localai-hub/internal/server"
 )
 
 func main() {

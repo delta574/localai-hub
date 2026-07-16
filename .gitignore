@@ -13,3 +13,17 @@ config.json
 *.log
 stdout.txt
 stderr.txt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# build artifacts
+*.exe
+*.dll
+*.test
+node_modules/

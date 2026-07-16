@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"localai-hub/internal/api"
-	"localai-hub/internal/config"
+	"github.com/delta574/localai-hub/internal/api"
+	"github.com/delta574/localai-hub/internal/config"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
