@@ -1,6 +1,6 @@
 <div align="center">
 
-# LocalAI Hub
+<img src="docs/logo/logo.png" alt="LocalAI Hub" width="400"/>
 
 **Run open-source LLMs on any Windows PC — no Docker, no Python, no cloud, no terminal.**
 
@@ -12,8 +12,6 @@
 [![macOS](https://img.shields.io/badge/macOS-000000?logo=apple)](https://github.com/delta574/localai-hub/actions)
 
 [Quick Start](#-quick-start) · [Features](#-features) · [API](#-for-developers) · [Build](#-build-from-source) · [FAQ](#-faq)
-
-<img src="docs/screenshots/chat.png" alt="LocalAI Hub chat interface" width="700"/>
 
 </div>
 

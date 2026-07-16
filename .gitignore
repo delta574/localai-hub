@@ -2,7 +2,9 @@ web/node_modules/
 web/.svelte-kit/
 web/build/
 /dist/
-/docs/
+/docs/*
+!/docs/screenshots/
+!/docs/logo/
 /conversations/
 /models/
 /bin/
