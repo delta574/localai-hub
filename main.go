@@ -47,8 +47,10 @@ func main() {
 	}
 	cfg.Port = *port
 
-	hw := hardware.Detect()
+	hw := hardware.Detect(absDir)
 	modelDownloader := download.New(absDir)
+
+	killOrphanedLlamaServer()
 
 	llamaDL := download.NewLlamaServerDownloader(filepath.Join(absDir, "bin"))
 	if !llamaDL.IsDownloaded() {
@@ -68,8 +70,13 @@ func main() {
 	srv.RegisterAPI(apiHandler)
 
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: srv.Router(),
+		Addr:              fmt.Sprintf("127.0.0.1:%d", cfg.Port),
+		Handler:           srv.Router(),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      0, // streaming SSE needs no write timeout
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MB
 	}
 
 	go func() {
@@ -98,6 +105,19 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	llmManager.Stop()
 	httpServer.Shutdown(ctx)
+	llmManager.Stop()
+}
+
+func killOrphanedLlamaServer() {
+	if runtime.GOOS != "windows" {
+		return
+	}
+	cmd := exec.Command("taskkill", "/f", "/im", "llama-server.exe")
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	if err := cmd.Run(); err != nil {
+		// taskkill exits non-zero if no matching process found — that's fine
+	}
+	slog.Info("cleaned up orphaned llama-server processes")
 }

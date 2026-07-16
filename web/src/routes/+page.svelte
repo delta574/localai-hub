@@ -3,7 +3,7 @@
 	import SetupWizard from '$lib/components/SetupWizard.svelte';
 	import Chat from '$lib/components/Chat.svelte';
 	import ModelsPage from '../routes/models/+page.svelte';
-	import SettingsPage from '../routes/settings/+page.svelte';
+	import SettingsPage from './settings/+page.svelte';
 
 	let sysInfo = $state<SystemInfo | null>(null);
 	let showWizard = $state(false);
@@ -24,11 +24,18 @@
 	$effect(() => {
 		getSystemInfo().then((info) => {
 			sysInfo = info;
-			if (info.isFirstLaunch || (info.installedModels.length === 0 && !info.llamaServerRunning)) {
-				showWizard = true;
-			}
+			showWizard = info.isFirstLaunch || (info.installedModels.length === 0 && !info.llamaServerRunning);
 		});
 		loadConvs();
+	});
+
+	$effect(() => {
+		const interval = setInterval(() => {
+			getSystemInfo()
+				.then((info) => { sysInfo = info; })
+				.catch(() => {});
+		}, 5000);
+		return () => clearInterval(interval);
 	});
 
 	async function newChat() {
@@ -36,7 +43,7 @@
 		page = 'chat';
 	}
 
-	async function selectConv(id: string) {
+	function selectConv(id: string) {
 		activeConv = id;
 		page = 'chat';
 	}
@@ -50,7 +57,7 @@
 </script>
 
 {#if showWizard}
-	<SetupWizard />
+	<SetupWizard onDone={() => { showWizard = false; getSystemInfo().then(i => sysInfo = i); }} />
 {/if}
 
 <nav class="sidebar">

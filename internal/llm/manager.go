@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -59,13 +60,27 @@ func (m *Manager) Start(modelPath string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.running {
+	if m.running && m.modelPath == modelPath {
 		return nil
+	}
+
+	if m.running {
+		oldCmd := m.cmd
+		m.running = false
+		m.mu.Unlock()
+		if oldCmd != nil && oldCmd.Process != nil {
+			oldCmd.Process.Kill()
+		}
+		m.mu.Lock()
 	}
 
 	llamaPath := m.llamaServerPath()
 	if _, err := os.Stat(llamaPath); os.IsNotExist(err) {
 		return fmt.Errorf("llama-server not found at %s; download it first", llamaPath)
+	}
+
+	if _, err := os.Stat(modelPath); os.IsNotExist(err) {
+		return fmt.Errorf("model file not found at %s", modelPath)
 	}
 
 	port := m.findFreePort()
@@ -81,14 +96,14 @@ func (m *Manager) Start(modelPath string) error {
 		"--host", "127.0.0.1",
 		"-t", fmt.Sprintf("%d", threads),
 		"-ngl", "0",
-		"--no-mmap",
 	}
 
 	slog.Info("starting llama-server", "args", strings.Join(args, " "))
 
 	cmd := exec.Command(llamaPath, args...)
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var stderrBuf strings.Builder
+	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start llama-server: %w", err)
@@ -100,47 +115,29 @@ func (m *Manager) Start(modelPath string) error {
 	m.modelPath = modelPath
 
 	go func() {
-		if err := cmd.Wait(); err != nil {
-			slog.Warn("llama-server exited", "error", err)
+		err := cmd.Wait()
+		if err != nil {
+			slog.Warn("llama-server exited", "error", err, "stderr", stderrBuf.String())
 		}
 		m.mu.Lock()
 		m.running = false
 		m.mu.Unlock()
 	}()
 
-	return m.waitForHealth(30 * time.Second)
+	err := m.waitForHealth(60 * time.Second)
+	if err != nil {
+		slog.Error("llama-server not healthy", "stderr", stderrBuf.String())
+	}
+	return err
 }
 
 func (m *Manager) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
 	if m.cmd != nil && m.cmd.Process != nil {
 		slog.Info("stopping llama-server")
 		m.cmd.Process.Kill()
-		m.cmd.Wait()
-		m.running = false
 	}
-}
-
-func (m *Manager) EnsureStarted(modelPath string) error {
-	m.mu.Lock()
-	if m.running && m.modelPath == modelPath {
-		m.mu.Unlock()
-		return nil
-	}
-	if m.running {
-		oldCmd := m.cmd
-		m.running = false
-		m.mu.Unlock()
-		if oldCmd != nil && oldCmd.Process != nil {
-			oldCmd.Process.Kill()
-			oldCmd.Wait()
-		}
-	} else {
-		m.mu.Unlock()
-	}
-	return m.Start(modelPath)
 }
 
 func (m *Manager) findFreePort() int {
@@ -174,10 +171,16 @@ func (m *Manager) waitForHealth(timeout time.Duration) error {
 	return fmt.Errorf("llama-server did not become healthy within %v", timeout)
 }
 
-func (m *Manager) ChatCompletionsRaw(w io.Writer, body []byte, stream bool) error {
-	url := fmt.Sprintf("http://127.0.0.1:%d/v1/chat/completions", m.Port())
+func (m *Manager) ChatCompletionsRaw(ctx context.Context, w io.Writer, body []byte) error {
+	m.mu.Lock()
+	if !m.running {
+		m.mu.Unlock()
+		return fmt.Errorf("llama-server not running")
+	}
+	url := fmt.Sprintf("http://127.0.0.1:%d/v1/chat/completions", m.port)
+	m.mu.Unlock()
 
-	req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(body)))
 	if err != nil {
 		return fmt.Errorf("create proxy request: %w", err)
 	}

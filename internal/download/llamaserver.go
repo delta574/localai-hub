@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,24 +11,17 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
+
+const LlamaServerVersion = "b10034"
 
 type GitHubRelease struct {
 	TagName string `json:"tag_name"`
 }
 
-func LatestLlamaServerVersion() (string, error) {
-	resp, err := http.Get("https://api.github.com/repos/ggml-org/llama.cpp/releases/latest")
-	if err != nil {
-		return "", fmt.Errorf("fetch latest release: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var rel GitHubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return "", fmt.Errorf("decode release: %w", err)
-	}
-	return rel.TagName, nil
+func (d *LlamaServerDownloader) LatestVersion() (string, error) {
+	return LlamaServerVersion, nil
 }
 
 func LlamaServerURL(tag string) string {
@@ -76,17 +68,21 @@ type LlamaServerDownloader struct {
 func NewLlamaServerDownloader(binDir string) *LlamaServerDownloader {
 	return &LlamaServerDownloader{
 		binDir: binDir,
-		client: &http.Client{},
+		client: &http.Client{Timeout: 5 * time.Minute},
 	}
 }
 
 func (d *LlamaServerDownloader) IsDownloaded() bool {
-	name := "llama-server"
+	target := "libllama-server-impl.so"
 	if runtime.GOOS == "windows" {
-		name = "llama-server.exe"
+		target = "llama-server-impl.dll"
 	}
-	_, err := os.Stat(filepath.Join(d.binDir, name))
-	return err == nil
+	path := filepath.Join(d.binDir, target)
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fi.Size() > 1024*1024
 }
 
 func (d *LlamaServerDownloader) LlamaServerPath() string {
@@ -102,7 +98,7 @@ func (d *LlamaServerDownloader) Download() error {
 		return nil
 	}
 
-	tag, err := LatestLlamaServerVersion()
+	tag, err := d.LatestVersion()
 	if err != nil {
 		return fmt.Errorf("get latest version: %w", err)
 	}
@@ -110,9 +106,26 @@ func (d *LlamaServerDownloader) Download() error {
 	url := LlamaServerURL(tag)
 	fmt.Printf("Downloading llama-server %s for %s/%s...\n", tag, runtime.GOOS, runtime.GOARCH)
 
-	resp, err := http.Get(url)
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		if attempt > 0 {
+			fmt.Printf("Retrying download (attempt %d/3)...\n", attempt+1)
+			time.Sleep(2 * time.Second)
+		}
+		if err := d.downloadOnce(url); err != nil {
+			lastErr = err
+			fmt.Printf("Download failed: %v\n", err)
+			continue
+		}
+		return nil
+	}
+	return fmt.Errorf("download failed after 3 attempts: %w", lastErr)
+}
+
+func (d *LlamaServerDownloader) downloadOnce(url string) error {
+	resp, err := d.client.Get(url)
 	if err != nil {
-		return fmt.Errorf("download llama-server: %w", err)
+		return fmt.Errorf("HTTP GET: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -160,28 +173,39 @@ func (d *LlamaServerDownloader) extractZip(path string) error {
 	}
 	defer zr.Close()
 
-	target := "llama-server.exe"
 	for _, f := range zr.File {
-		if filepath.Base(f.Name) == target {
-			rc, err := f.Open()
-			if err != nil {
-				return fmt.Errorf("open %s in zip: %w", f.Name, err)
-			}
-			defer rc.Close()
+		name := filepath.Clean(f.Name)
+		if strings.Contains(name, "..") {
+			continue
+		}
+		outPath := filepath.Join(d.binDir, name)
 
-			out, err := os.Create(filepath.Join(d.binDir, target))
-			if err != nil {
-				return fmt.Errorf("create %s: %w", target, err)
-			}
-			defer out.Close()
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(outPath, 0755)
+			continue
+		}
 
-			if _, err := io.Copy(out, rc); err != nil {
-				return fmt.Errorf("extract %s: %w", target, err)
-			}
-			return nil
+		os.MkdirAll(filepath.Dir(outPath), 0755)
+
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("open %s: %w", f.Name, err)
+		}
+
+		out, err := os.Create(outPath)
+		if err != nil {
+			rc.Close()
+			return fmt.Errorf("create %s: %w", name, err)
+		}
+
+		_, err = io.Copy(out, rc)
+		rc.Close()
+		out.Close()
+		if err != nil {
+			return fmt.Errorf("extract %s: %w", name, err)
 		}
 	}
-	return fmt.Errorf("llama-server.exe not found in archive")
+	return nil
 }
 
 func (d *LlamaServerDownloader) extractTarGz(path string) error {
@@ -198,11 +222,6 @@ func (d *LlamaServerDownloader) extractTarGz(path string) error {
 	defer gzr.Close()
 
 	tr := tar.NewReader(gzr)
-	target := "llama-server"
-	if runtime.GOOS == "windows" {
-		target = "llama-server.exe"
-	}
-
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -211,21 +230,35 @@ func (d *LlamaServerDownloader) extractTarGz(path string) error {
 		if err != nil {
 			return fmt.Errorf("read tar: %w", err)
 		}
-		if filepath.Base(header.Name) == target {
-			out, err := os.Create(filepath.Join(d.binDir, target))
-			if err != nil {
-				return fmt.Errorf("create %s: %w", target, err)
-			}
-			defer out.Close()
 
+		name := header.Name
+		if idx := strings.IndexByte(name, '/'); idx >= 0 {
+			name = name[idx+1:]
+		}
+		if name == "" {
+			continue
+		}
+
+		outPath := filepath.Join(d.binDir, name)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			os.MkdirAll(outPath, 0755)
+		case tar.TypeReg:
+			os.MkdirAll(filepath.Dir(outPath), 0755)
+			out, err := os.Create(outPath)
+			if err != nil {
+				return fmt.Errorf("create %s: %w", name, err)
+			}
 			if _, err := io.Copy(out, tr); err != nil {
-				return fmt.Errorf("extract %s: %w", target, err)
+				out.Close()
+				return fmt.Errorf("extract %s: %w", name, err)
 			}
-			if err := os.Chmod(out.Name(), 0755); err != nil {
-				return fmt.Errorf("chmod %s: %w", out.Name(), err)
+			out.Close()
+			if err := os.Chmod(outPath, header.FileInfo().Mode()); err != nil {
+				return fmt.Errorf("chmod %s: %w", outPath, err)
 			}
-			return nil
 		}
 	}
-	return fmt.Errorf("%s not found in archive", target)
+	return nil
 }

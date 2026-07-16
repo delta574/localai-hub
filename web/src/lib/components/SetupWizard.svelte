@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { getSystemInfo, listModels, pullModel, type SystemInfo, type ModelInfo, type ProgressEvent } from '$lib/api';
+	import { getSystemInfo, listModels, pullModel, updateConfig, type SystemInfo, type ModelInfo, type ProgressEvent } from '$lib/api';
+
+	let { onDone } = $props<{ onDone?: () => void }>();
 
 	let sysInfo = $state<SystemInfo | null>(null);
 	let models = $state<ModelInfo[]>([]);
 	let downloading = $state<string | null>(null);
 	let progress = $state<ProgressEvent | null>(null);
+	let errorMsg = $state('');
 	let done = $state(false);
 
 	$effect(() => {
@@ -13,17 +16,27 @@
 	});
 
 	function startDownload(id: string) {
+		errorMsg = '';
 		downloading = id;
 		pullModel(id, (evt) => {
 			progress = evt;
 			if (evt.type === 'done') {
+				updateConfig({ activeModel: id });
+				listModels().then((m) => models = m);
+				getSystemInfo().then((i) => sysInfo = i);
 				done = true;
+				onDone?.();
+			}
+			if (evt.type === 'error') {
+				errorMsg = evt.message || 'Download failed';
+				downloading = null;
 			}
 		});
 	}
 
 	function skip() {
 		done = true;
+		onDone?.();
 	}
 </script>
 
@@ -35,6 +48,10 @@
 				<p class="specs">Your PC: <strong>{sysInfo.ram.total} GB RAM</strong> &middot; <strong>{sysInfo.cpu} cores</strong> &middot; <strong>{sysInfo.os}</strong></p>
 			{/if}
 			<p class="subtitle">Pick a model to install. Your PC can run any of these:</p>
+
+			{#if errorMsg}
+				<div class="error-banner">{errorMsg}</div>
+			{/if}
 
 			<div class="model-grid">
 				{#each models as m}
@@ -99,6 +116,11 @@
 	.progress-bar { width: 100px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 	.progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
 	.progress-text { font-size: 0.8rem; color: var(--text2); min-width: 3rem; }
+	.error-banner {
+		background: #3b1a1a; border: 1px solid #ef4444; border-radius: 6px;
+		padding: 0.6rem 0.8rem; margin-bottom: 1rem;
+		font-size: 0.85rem; color: #fca5a5;
+	}
 	.skip-btn {
 		display: block; margin: 1.5rem auto 0;
 		background: none; border: none; color: var(--text2); font-size: 0.85rem;

@@ -2,6 +2,7 @@ package hardware
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"unsafe"
@@ -53,7 +54,7 @@ func DiskFreeGB(path string) int {
 	return int(total / (1024 * 1024 * 1024))
 }
 
-func Detect() *Info {
+func Detect(dataDir string) *Info {
 	info := &Info{
 		CPUCores: runtime.NumCPU(),
 		OS:       runtime.GOOS,
@@ -75,14 +76,10 @@ func Detect() *Info {
 	}
 	if info.RAMFreeGB < 1 {
 		info.RAMFreeGB = info.RAMTotalGB - 1
+	}
 	info.DiskFreeGB = DiskFreeGB(".")
 
-	if info.RAMFreeGB < 1 {
-			info.RAMFreeGB = 2
-		}
-	}
-
-	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(dataDir, "config.json")); os.IsNotExist(err) {
 		info.IsFirstLaunch = true
 	}
 

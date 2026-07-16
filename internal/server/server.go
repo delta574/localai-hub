@@ -28,6 +28,7 @@ func New(cfg *config.Config, staticFS http.FileSystem) *Server {
 
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.Recoverer)
+	s.router.Use(securityHeaders)
 	s.router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -42,6 +43,7 @@ func (s *Server) RegisterAPI(h *api.Handler) {
 	s.api = h
 
 	s.router.Route("/api", func(r chi.Router) {
+		r.Use(maxBodySize)
 		r.Get("/system/info", h.SystemInfo)
 		r.Get("/models", h.ListModels)
 		r.Post("/models/pull", h.PullModel)
@@ -54,8 +56,8 @@ func (s *Server) RegisterAPI(h *api.Handler) {
 		r.Put("/config", h.UpdateConfig)
 	})
 
-	s.router.Post("/v1/chat/completions", h.ChatCompletions)
-	s.router.Get("/v1/models", h.OpenAIModels)
+	s.router.With(maxBodySize).Post("/v1/chat/completions", h.ChatCompletions)
+	s.router.With(maxBodySize).Get("/v1/models", h.OpenAIModels)
 
 	if s.staticFS != nil {
 		s.router.Get("/*", s.serveStatic)
@@ -64,6 +66,23 @@ func (s *Server) RegisterAPI(h *api.Handler) {
 
 func (s *Server) Router() *chi.Mux {
 	return s.router
+}
+
+func maxBodySize(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) serveStatic(w http.ResponseWriter, r *http.Request) {
@@ -80,8 +99,10 @@ func (s *Server) serveStatic(w http.ResponseWriter, r *http.Request) {
 
 	if content, err := s.staticFS.Open("index.html"); err == nil {
 		content.Close()
+		origPath := r.URL.Path
 		r.URL.Path = "/"
 		http.FileServer(s.staticFS).ServeHTTP(w, r)
+		r.URL.Path = origPath
 		return
 	}
 

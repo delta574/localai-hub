@@ -71,8 +71,9 @@ func (d *Downloader) ModelPath(model *Model) string {
 
 func (d *Downloader) StartPull(ctx context.Context, model *Model, events chan<- ProgressEvent) error {
 	d.mu.Lock()
-	if cancel, ok := d.running[model.ID]; ok {
-		cancel()
+	if _, ok := d.running[model.ID]; ok {
+		d.mu.Unlock()
+		return fmt.Errorf("download already in progress for %s", model.ID)
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	d.running[model.ID] = cancel
@@ -187,8 +188,21 @@ func (d *Downloader) downloadFile(ctx context.Context, url, tmpPath, finalPath s
 		}
 	}
 
-	if err := os.Rename(tmpPath, finalPath); err != nil {
-		return fmt.Errorf("finalize file: %w", err)
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close file: %w", err)
+	}
+
+	var renameErr error
+	for i := 0; i < 5; i++ {
+		if err := os.Rename(tmpPath, finalPath); err == nil {
+			renameErr = nil
+			break
+		}
+		renameErr = err
+		time.Sleep(100 * time.Millisecond)
+	}
+	if renameErr != nil {
+		return fmt.Errorf("finalize file: %w", renameErr)
 	}
 
 	return nil
@@ -198,8 +212,11 @@ func (d *Downloader) DeleteModel(modelID string) error {
 	for _, m := range CuratedModels {
 		if m.ID == modelID {
 			path := filepath.Join(d.ModelsDir(), m.HFFile)
+			if !strings.HasPrefix(path, d.ModelsDir()) {
+				return fmt.Errorf("invalid model path")
+			}
 			return os.Remove(path)
 		}
 	}
-	return os.Remove(filepath.Join(d.ModelsDir(), modelID))
+	return fmt.Errorf("model not found: %s", modelID)
 }

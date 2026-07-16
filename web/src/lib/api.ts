@@ -36,24 +36,41 @@ export interface ProgressEvent {
 	message?: string;
 }
 
+async function checkRes(res: Response): Promise<Response> {
+	if (!res.ok) {
+		const body = await res.text();
+		let msg = `HTTP ${res.status}`;
+		try { const j = JSON.parse(body); if (j.error) msg = j.error; } catch {}
+		throw new Error(msg);
+	}
+	return res;
+}
+
 export async function getSystemInfo(): Promise<SystemInfo> {
-	const res = await fetch(`${BASE}/api/system/info`);
+	const res = await checkRes(await fetch(`${BASE}/api/system/info`));
 	return res.json();
 }
 
 export async function listModels(): Promise<ModelInfo[]> {
-	const res = await fetch(`${BASE}/api/models`);
+	const res = await checkRes(await fetch(`${BASE}/api/models`));
 	return res.json();
 }
 
-export function pullModel(modelId: string, onEvent: (evt: ProgressEvent) => void): AbortController {
+export function pullModel(modelId: string, onEvent: (evt: ProgressEvent) => void, opts?: { signal?: AbortSignal }): AbortController {
 	const ctrl = new AbortController();
+	const signal = opts?.signal ? AbortSignal.any([ctrl.signal, opts.signal]) : ctrl.signal;
 	fetch(`${BASE}/api/models/pull`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ model: modelId }),
-		signal: ctrl.signal
+		signal
 	}).then(async (res) => {
+		if (!res.ok) {
+			const body = await res.text();
+			let msg = `HTTP ${res.status}`;
+			try { const j = JSON.parse(body); if (j.error) msg = j.error; } catch {}
+			throw new Error(msg);
+		}
 		const reader = res.body!.getReader();
 		const decoder = new TextDecoder();
 		let buf = '';
@@ -71,12 +88,16 @@ export function pullModel(modelId: string, onEvent: (evt: ProgressEvent) => void
 				}
 			}
 		}
-	});
+	}).catch(err => onEvent({
+		type: 'error' as const,
+		modelId: modelId,
+		message: err instanceof Error ? err.message : String(err)
+	}));
 	return ctrl;
 }
 
 export async function deleteModel(id: string): Promise<void> {
-	await fetch(`${BASE}/api/models/${id}`, { method: 'DELETE' });
+	await checkRes(await fetch(`${BASE}/api/models/${id}`, { method: 'DELETE' }));
 }
 
 export function chatCompletion(model: string, messages: { role: string; content: string }[], onToken: (text: string) => void, opts?: { signal?: AbortSignal; systemPrompt?: string; temperature?: number }): Promise<void> {
@@ -87,6 +108,12 @@ export function chatCompletion(model: string, messages: { role: string; content:
 		body: JSON.stringify({ model, messages: msgs, stream: true, temperature: opts?.temperature ?? 0.7, max_tokens: 2048 }),
 		signal: opts?.signal
 	}).then(async (res) => {
+		if (!res.ok) {
+			const body = await res.text();
+			let msg = `HTTP ${res.status}`;
+			try { const j = JSON.parse(body); if (j.error) msg = j.error; } catch {}
+			throw new Error(msg);
+		}
 		const reader = res.body!.getReader();
 		const decoder = new TextDecoder();
 		let buf = '';
@@ -123,37 +150,37 @@ export interface Conversation {
 }
 
 export async function listConversations(): Promise<ConversationSummary[]> {
-	const res = await fetch(`${BASE}/api/conversations`);
+	const res = await checkRes(await fetch(`${BASE}/api/conversations`));
 	return res.json();
 }
 
 export async function createConversation(): Promise<string> {
-	const res = await fetch(`${BASE}/api/conversations`, { method: 'POST' });
+	const res = await checkRes(await fetch(`${BASE}/api/conversations`, { method: 'POST' }));
 	const data = await res.json();
 	return data.id;
 }
 
 export async function getConversation(id: string): Promise<Conversation> {
-	const res = await fetch(`${BASE}/api/conversations/${id}`);
+	const res = await checkRes(await fetch(`${BASE}/api/conversations/${id}`));
 	return res.json();
 }
 
 export async function updateConversation(id: string, messages: { role: string; content: string }[], title: string): Promise<void> {
-	await fetch(`${BASE}/api/conversations/${id}`, {
+	await checkRes(await fetch(`${BASE}/api/conversations/${id}`, {
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ messages, title })
-	});
+	}));
 }
 
 export async function deleteConversation(id: string): Promise<void> {
-	await fetch(`${BASE}/api/conversations/${id}`, { method: 'DELETE' });
+	await checkRes(await fetch(`${BASE}/api/conversations/${id}`, { method: 'DELETE' }));
 }
 
 export async function updateConfig(updates: Record<string, unknown>): Promise<void> {
-	await fetch(`${BASE}/api/config`, {
+	await checkRes(await fetch(`${BASE}/api/config`, {
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(updates)
-	});
+	}));
 }

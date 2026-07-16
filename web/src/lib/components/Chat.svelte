@@ -15,6 +15,7 @@
 	let abortCtrl = $state<AbortController | null>(null);
 	let systemPrompt = $state('');
 	let temperature = $state(0.7);
+	let activeModel = $state('');
 	let currentId = $state<string | null>(null);
 	let pendingSave = $state(false);
 
@@ -22,25 +23,32 @@
 		getSystemInfo().then((info) => {
 			systemPrompt = info.systemPrompt;
 			temperature = info.temperature;
+			activeModel = info.activeModel;
 		});
 	});
 
 	$effect(() => {
 		if (conversationId && conversationId !== currentId) {
+			const expectedId = conversationId;
 			currentId = conversationId;
 			getConversation(conversationId).then((c) => {
+				if (currentId !== expectedId) return;
 				messages = c.messages.map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
-			}).catch(() => messages = []);
+			}).catch(() => {
+				if (currentId === expectedId) messages = [];
+			});
 		}
 	});
 
 	function save() {
-		if (!currentId || pendingSave) return;
+		if (!currentId) return;
+		if (pendingSave) { pendingSave = false; return; }
 		pendingSave = true;
+		const id = currentId;
 		const title = messages.length > 0 ? messages[0].content.slice(0, 60) : 'New Chat';
-		updateConversation(currentId, messages, title).then(() => {
-			onTitleChange?.(currentId!, title);
-		}).finally(() => pendingSave = false);
+		updateConversation(id, messages, title).then(() => {
+			onTitleChange?.(id, title);
+		}).finally(() => { if (currentId === id) pendingSave = false; });
 	}
 
 	async function send() {
@@ -59,15 +67,15 @@
 
 		abortCtrl = new AbortController();
 		try {
-			await chatCompletion('', messages.slice(0, idx), (token) => {
+			await chatCompletion(activeModel, messages.slice(0, idx), (token) => {
 				messages[idx].content += token;
 				messages = messages;
 			}, { signal: abortCtrl.signal, systemPrompt, temperature });
-		} catch {
-			if (messages[idx].content === '') {
-				messages[idx].content = 'Error: connection failed. Make sure a model is running.';
-			}
-		}
+	} catch (e) {
+		const errMsg = 'Error: ' + (e instanceof Error ? e.message : 'connection failed');
+		messages[idx].content = messages[idx].content ? messages[idx].content + '\n\n' + errMsg : errMsg;
+		messages = messages;
+	}
 		streaming = false;
 		abortCtrl = null;
 		save();

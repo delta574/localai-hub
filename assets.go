@@ -2,6 +2,8 @@
 
 package main
 
+//go:generate powershell -Command "cd web; npm run build"
+
 import (
 	"embed"
 	"io/fs"

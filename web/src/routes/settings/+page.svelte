@@ -1,19 +1,31 @@
 <script lang="ts">
-	import { getSystemInfo, updateConfig, type SystemInfo } from '$lib/api';
+	import { onDestroy } from 'svelte';
+	import { getSystemInfo, listModels, updateConfig, type SystemInfo, type ModelInfo } from '$lib/api';
 
 	let info = $state<SystemInfo | null>(null);
+	let models = $state<ModelInfo[]>([]);
 	let prompt = $state('');
 	let temp = $state(0.7);
 	let saved = $state(false);
+	let savedTimer: ReturnType<typeof setTimeout> | undefined;
+
+	onDestroy(() => clearTimeout(savedTimer));
 
 	$effect(() => {
-		getSystemInfo().then((i) => info = i);
+		getSystemInfo().then((i) => { info = i; prompt = i.systemPrompt; temp = i.temperature; });
+		listModels().then((m) => models = m);
 	});
 
 	async function save() {
 		await updateConfig({ systemPrompt: prompt, temperature: temp });
 		saved = true;
-		setTimeout(() => saved = false, 2000);
+		clearTimeout(savedTimer);
+		savedTimer = setTimeout(() => saved = false, 2000);
+	}
+
+	async function selectModel(id: string) {
+		await updateConfig({ activeModel: id });
+		if (info) info.activeModel = id;
 	}
 </script>
 
@@ -30,6 +42,19 @@
 				<div><span style="color: var(--text2); display: inline-block; width: 100px;">Platform</span>{info.os} {info.arch}</div>
 				<div><span style="color: var(--text2); display: inline-block; width: 100px;">Engine</span>{info.llamaServerRunning ? 'Running' : 'Idle'}</div>
 			</div>
+		</div>
+
+		<div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem;">
+			<h3 style="font-size: 0.9rem; color: var(--text2); margin-bottom: 0.75rem;">Active Model</h3>
+			<select onchange={(e) => selectModel((e.target as HTMLSelectElement).value)} style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.9rem;">
+				<option value="">-- Select a model --</option>
+				{#each models.filter(m => m.installed) as m}
+					<option value={m.id} selected={info.activeModel === m.id}>{m.name}</option>
+				{/each}
+			</select>
+			{#if models.filter(m => m.installed).length === 0}
+				<p style="font-size: 0.8rem; color: var(--text2); margin-top: 0.5rem;">Download a model from the Models page first.</p>
+			{/if}
 		</div>
 	{/if}
 
