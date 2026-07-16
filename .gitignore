@@ -2,9 +2,9 @@ web/node_modules/
 web/.svelte-kit/
 web/build/
 dist/*.exe
-conversations/
-models/
-bin/
+/conversations/
+/models/
+/bin/
 config.json
 .env
 *.log
