@@ -2,7 +2,9 @@
 
 **Run open-source LLMs on any Windows PC — no Docker, no Python, no cloud, no terminal.**
 
-One 12 MB `.exe`. Double-click. Browser opens. Chat.
+[![Build](https://github.com/delta574/localai-hub/actions/workflows/build.yml/badge.svg)](https://github.com/delta574/localai-hub/actions/workflows/build.yml)
+
+One 3.5 MB `.exe`. Double-click. Browser opens. Chat.
 
 LocalAI Hub is a single-binary desktop application that downloads, manages, and runs large language models locally. Designed for **4-8 GB RAM machines**, portable USB operation, and users who want a private AI assistant without the setup hassle.
 
@@ -10,7 +12,7 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 
 ## Features
 
-- **Single binary** — 12 MB `.exe`, zero dependencies. No Electron, no Node.js, no Python runtime.
+- **Single binary** — 3.5 MB `.exe`, zero dependencies. No Electron, no Node.js, no Python runtime.
 - **Auto-setup** — Downloads `llama-server` (inference engine) and models from HuggingFace on first run.
 - **One-click model install** — Pick from 5 curated GGUF models sized for 2–4 GB RAM. Download with progress bar, auto-resume on interruption.
 - **Chat UI** — Streaming token-by-token responses, markdown rendering, conversation history.
@@ -27,7 +29,7 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 
 ### Option A: Portable .exe (recommended)
 
-1. Download `LocalAI.exe` from the [Releases page](https://github.com/delta574/localai-hub/releases).
+1. Download `LocalAI.exe` from the [Actions tab](https://github.com/delta574/localai-hub/actions) (click the latest run, download the artifact).
 2. Create a folder anywhere — desktop, USB drive, doesn't matter.
 3. Drop `LocalAI.exe` into that folder.
 4. Double-click `LocalAI.exe`. A terminal window opens and your browser launches to `http://localhost:8080`.
@@ -37,7 +39,7 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 
 ### Option B: NSIS Installer
 
-1. Download `LocalAI_Hub_Setup.exe` from the [Releases page](https://github.com/delta574/localai-hub/releases).
+1. Download `LocalAI_Hub_Setup.exe` from the [Actions tab](https://github.com/delta574/localai-hub/actions) (click the latest run, download the artifact).
 2. Run the installer — it adds a Start Menu shortcut and an uninstaller entry.
 3. Launch from Start Menu. Same experience as above.
 
@@ -47,7 +49,7 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 
 ## Screenshots
 
-*(Add screenshots here — setup wizard, chat page, models page)*
+*(Coming soon — setup wizard, chat page, models page)*
 
 ---
 
