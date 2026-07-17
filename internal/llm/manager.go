@@ -65,12 +65,8 @@ func (m *Manager) Start(modelPath string) error {
 	}
 
 	if m.running {
-		oldCmd := m.cmd
-		m.running = false
 		m.mu.Unlock()
-		if oldCmd != nil && oldCmd.Process != nil {
-			oldCmd.Process.Kill()
-		}
+		m.stopLocked()
 		m.mu.Lock()
 	}
 
@@ -134,10 +130,15 @@ func (m *Manager) Start(modelPath string) error {
 func (m *Manager) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.stopLocked()
+}
+
+func (m *Manager) stopLocked() {
 	if m.cmd != nil && m.cmd.Process != nil {
 		slog.Info("stopping llama-server")
 		m.cmd.Process.Kill()
 	}
+	m.running = false
 }
 
 func (m *Manager) findFreePort() int {

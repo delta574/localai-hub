@@ -3,8 +3,8 @@
 !define REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
 
 OutFile "..\dist\LocalAI_Hub_Setup.exe"
-InstallDir "$PROGRAMFILES64\${APP_NAME}"
-RequestExecutionLevel admin
+InstallDir "$LOCALAPPDATA\${APP_NAME}"
+RequestExecutionLevel user
 
 !include "MUI2.nsh"
 !insertmacro MUI_PAGE_WELCOME
@@ -23,11 +23,11 @@ Section "Install"
 
   WriteUninstaller "$INSTDIR\uninstall.exe"
 
-  WriteRegStr HKLM "${REG_KEY}" "DisplayName" "${APP_NAME}"
-  WriteRegStr HKLM "${REG_KEY}" "UninstallString" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKLM "${REG_KEY}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
-  WriteRegStr HKLM "${REG_KEY}" "DisplayVersion" "1.0.0"
-  WriteRegStr HKLM "${REG_KEY}" "Publisher" "LocalAI Hub"
+  WriteRegStr HKCU "${REG_KEY}" "DisplayName" "${APP_NAME}"
+  WriteRegStr HKCU "${REG_KEY}" "UninstallString" "$INSTDIR\uninstall.exe"
+  WriteRegStr HKCU "${REG_KEY}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
+  WriteRegStr HKCU "${REG_KEY}" "DisplayVersion" "1.0.0"
+  WriteRegStr HKCU "${REG_KEY}" "Publisher" "LocalAI Hub"
 SectionEnd
 
 Section "Uninstall"
@@ -39,5 +39,5 @@ Section "Uninstall"
   RMDir "$SMPROGRAMS\${APP_NAME}"
   Delete "$DESKTOP\${APP_NAME}.lnk"
 
-  DeleteRegKey HKLM "${REG_KEY}"
+  DeleteRegKey HKCU "${REG_KEY}"
 SectionEnd

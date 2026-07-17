@@ -1,17 +1,98 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/delta574/localai-hub/internal/api"
 	"github.com/delta574/localai-hub/internal/config"
+	"github.com/delta574/localai-hub/internal/httputil"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
+
+type rateLimiter struct {
+	mu     sync.Mutex
+	visits map[string][]time.Time
+	limit  int
+	window time.Duration
+}
+
+func newRateLimiter(limit int, window time.Duration) *rateLimiter {
+	rl := &rateLimiter{
+		visits: make(map[string][]time.Time),
+		limit:  limit,
+		window: window,
+	}
+	go rl.cleanup()
+	return rl
+}
+
+func (rl *rateLimiter) cleanup() {
+	for {
+		time.Sleep(rl.window)
+		rl.mu.Lock()
+		cutoff := time.Now().Add(-rl.window)
+		for ip, times := range rl.visits {
+			keep := 0
+			for _, t := range times {
+				if t.After(cutoff) {
+					times[keep] = t
+					keep++
+				}
+			}
+			if keep == 0 {
+				delete(rl.visits, ip)
+			} else {
+				rl.visits[ip] = times[:keep]
+			}
+		}
+		rl.mu.Unlock()
+	}
+}
+
+func (rl *rateLimiter) check(ip string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	now := time.Now()
+	cutoff := now.Add(-rl.window)
+	times := rl.visits[ip]
+	keep := 0
+	for _, t := range times {
+		if t.After(cutoff) {
+			times[keep] = t
+			keep++
+		}
+	}
+	times = times[:keep]
+	if len(times) >= rl.limit {
+		rl.visits[ip] = times
+		return false
+	}
+	rl.visits[ip] = append(times, now)
+	return true
+}
+
+func rateLimit(limit int, window time.Duration) func(http.Handler) http.Handler {
+	rl := newRateLimiter(limit, window)
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip := r.RemoteAddr
+			if idx := strings.LastIndex(ip, ":"); idx >= 0 {
+				ip = ip[:idx]
+			}
+			if !rl.check(ip) {
+				httputil.WriteJSON(w, http.StatusTooManyRequests, map[string]string{"error": "rate limit exceeded"})
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 type Server struct {
 	cfg      *config.Config
@@ -31,11 +112,12 @@ func New(cfg *config.Config, staticFS http.FileSystem) *Server {
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(securityHeaders)
 	s.router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   []string{"http://localhost:8080", "http://127.0.0.1:8080", "http://localhost:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: false,
 	}))
+	s.router.Use(maxBodySize)
 
 	return s
 }
@@ -44,25 +126,23 @@ func (s *Server) RegisterAPI(h *api.Handler) {
 	s.api = h
 
 	s.router.Route("/api", func(r chi.Router) {
-		r.Use(maxBodySize)
 		r.Get("/system/info", h.SystemInfo)
 		r.Get("/models", h.ListModels)
 		r.Post("/models/pull", h.PullModel)
 		r.Delete("/models/{id}", h.DeleteModel)
 		r.Get("/conversations", h.ListConversations)
-		r.Post("/conversations", h.CreateConversation)
+		r.With(rateLimit(60, time.Minute)).Post("/conversations", h.CreateConversation)
 		r.Get("/conversations/{id}", h.GetConversation)
 		r.Put("/conversations/{id}", h.UpdateConversation)
 		r.Delete("/conversations/{id}", h.DeleteConversation)
 		r.Put("/config", h.UpdateConfig)
 		r.Get("/keys", h.ListApiKeys)
-		r.Post("/keys", h.CreateApiKey)
+		r.With(rateLimit(60, time.Minute)).Post("/keys", h.CreateApiKey)
 		r.Delete("/keys/{id}", h.DeleteApiKey)
 		r.Put("/keys/{id}/toggle", h.ToggleApiKey)
 	})
 
 	s.router.Route("/v1", func(r chi.Router) {
-		r.Use(maxBodySize)
 		r.Use(s.apiKeyMiddleware)
 		r.Post("/chat/completions", h.ChatCompletions)
 		r.Get("/models", h.OpenAIModels)
@@ -75,9 +155,7 @@ func (s *Server) RegisterAPI(h *api.Handler) {
 
 func (s *Server) apiKeyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.cfg.RLock()
 		hasKeys := s.cfg.HasApiKeys()
-		s.cfg.RUnlock()
 
 		if !hasKeys {
 			next.ServeHTTP(w, r)
@@ -86,29 +164,21 @@ func (s *Server) apiKeyMiddleware(next http.Handler) http.Handler {
 
 		auth := r.Header.Get("Authorization")
 		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing API key"})
+			httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing API key"})
 			return
 		}
 
 		token := strings.TrimPrefix(auth, "Bearer ")
 
-		s.cfg.Lock()
 		entry := s.cfg.VerifyApiKey(token)
-		s.cfg.Unlock()
 
 		if entry == nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid API key"})
+			httputil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid API key"})
 			return
 		}
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
 }
 
 func (s *Server) Router() *chi.Mux {

@@ -68,18 +68,17 @@ func Recommend(freeRAMGB int) *Model {
 	if freeRAMGB < 1 {
 		freeRAMGB = 4
 	}
-	var best *Model
-	for i := range CuratedModels {
-		m := &CuratedModels[i]
+	best := 0
+	for i, m := range CuratedModels {
 		if freeRAMGB < m.MinRAMGB {
 			continue
 		}
-		if best == nil || (m.SizeGB > best.SizeGB && m.MinRAMGB <= freeRAMGB) {
-			best = m
+		if best == 0 || (m.SizeGB > CuratedModels[best].SizeGB && m.MinRAMGB <= freeRAMGB) {
+			best = i
 		}
 	}
-	if best == nil && len(CuratedModels) > 0 {
-		best = &CuratedModels[len(CuratedModels)-1]
+	if best == 0 && len(CuratedModels) > 0 {
+		best = len(CuratedModels) - 1
 	}
-	return best
+	return &CuratedModels[best]
 }

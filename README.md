@@ -122,7 +122,8 @@ curl http://localhost:8080/v1/chat/completions \
 ```python
 from openai import OpenAI
 
-client = OpenAI(base_url="http://localhost:8080/v1", api_key="not-needed")
+# If no keys configured, any value works. See Settings page to create keys.
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="lah_...")
 response = client.chat.completions.create(
     model="",
     messages=[{"role": "user", "content": "Hello!"}],

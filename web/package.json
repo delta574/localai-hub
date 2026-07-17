@@ -3,11 +3,16 @@
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
+	"description": "LocalAI Hub web frontend - Svelte SPA",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/delta574/localai-hub"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"svelte-check": "svelte-check",
-		"preview": "vite preview"
+		"svelte-check": "svelte-check"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.0",

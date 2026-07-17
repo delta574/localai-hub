@@ -56,57 +56,84 @@
 	}
 </script>
 
-{#if showWizard}
-	<SetupWizard onDone={() => { showWizard = false; getSystemInfo().then(i => sysInfo = i); }} />
+{#if sysInfo !== null}
+	{#if showWizard}
+		<SetupWizard onDone={() => { showWizard = false; getSystemInfo().then(i => sysInfo = i); }} />
+	{/if}
+
+	<nav class="sidebar">
+		<div class="logo">LocalAI Hub</div>
+		<div class="nav-items">
+			<button class="nav-item" class:active={page === 'chat'} onclick={() => page = 'chat'}>
+				Chat
+			</button>
+			<button class="nav-item" class:active={page === 'models'} onclick={() => page = 'models'}>Models</button>
+			<button class="nav-item" class:active={page === 'settings'} onclick={() => page = 'settings'}>Settings</button>
+		</div>
+		{#if page === 'chat'}
+			<div class="conv-header">
+				<span>Conversations</span>
+				<button class="btn-new" onclick={newChat} title="New chat">+</button>
+			</div>
+			<div class="conv-list">
+				{#each conversations as c}
+					<div class="conv-item" class:active={activeConv === c.id} onclick={() => selectConv(c.id)} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && selectConv(c.id)}>
+						<span class="conv-title">{c.title}</span>
+						<button class="btn-del" onclick={(e) => removeConv(c.id, e)} title="Delete">&times;</button>
+					</div>
+				{/each}
+				{#if conversations.length === 0}
+					<div class="conv-empty">No conversations yet</div>
+				{/if}
+			</div>
+		{/if}
+		<div class="status">
+			<div class="dot" class:green={sysInfo?.llamaServerRunning} class:red={!sysInfo?.llamaServerRunning}></div>
+			<span>{sysInfo?.llamaServerRunning ? 'Running' : 'Idle'}</span>
+		</div>
+	</nav>
+
+	<main class="main">
+		{#if page === 'chat'}
+			<Chat conversationId={activeConv} onTitleChange={onTitleChange} />
+		{:else if page === 'models'}
+			<ModelsPage />
+		{:else if page === 'settings'}
+			<SettingsPage />
+		{/if}
+	</main>
+{:else}
+	<div class="loading-screen">
+		<div class="spinner"></div>
+	</div>
 {/if}
-
-<nav class="sidebar">
-	<div class="logo">LocalAI Hub</div>
-	<div class="nav-items">
-		<button class="nav-item" class:active={page === 'chat'} onclick={() => page = 'chat'}>
-			Chat
-		</button>
-		<button class="nav-item" class:active={page === 'models'} onclick={() => page = 'models'}>Models</button>
-		<button class="nav-item" class:active={page === 'settings'} onclick={() => page = 'settings'}>Settings</button>
-	</div>
-	{#if page === 'chat'}
-		<div class="conv-header">
-			<span>Conversations</span>
-			<button class="btn-new" onclick={newChat} title="New chat">+</button>
-		</div>
-		<div class="conv-list">
-			{#each conversations as c}
-				<div class="conv-item" class:active={activeConv === c.id} onclick={() => selectConv(c.id)} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && selectConv(c.id)}>
-					<span class="conv-title">{c.title}</span>
-					<button class="btn-del" onclick={(e) => removeConv(c.id, e)} title="Delete">&times;</button>
-				</div>
-			{/each}
-			{#if conversations.length === 0}
-				<div class="conv-empty">No conversations yet</div>
-			{/if}
-		</div>
-	{/if}
-	<div class="status">
-		<div class="dot" class:green={sysInfo?.llamaServerRunning} class:red={!sysInfo?.llamaServerRunning}></div>
-		<span>{sysInfo?.llamaServerRunning ? 'Running' : 'Idle'}</span>
-	</div>
-</nav>
-
-<main class="main">
-	{#if page === 'chat'}
-		<Chat conversationId={activeConv} onTitleChange={onTitleChange} />
-	{:else if page === 'models'}
-		<ModelsPage />
-	{:else if page === 'settings'}
-		<SettingsPage />
-	{/if}
-</main>
 
 <style>
 	:global(body) {
 		display: flex;
 		height: 100dvh;
 		margin: 0;
+	}
+
+	.loading-screen {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100dvh;
+	}
+
+	.spinner {
+		width: 32px;
+		height: 32px;
+		border: 3px solid var(--border);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
 	.sidebar {

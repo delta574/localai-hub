@@ -76,7 +76,7 @@
 		messages[idx].content = messages[idx].content ? messages[idx].content + '\n\n' + errMsg : errMsg;
 		messages = messages;
 	}
-		streaming = false;
+	streaming = false;
 		abortCtrl = null;
 		save();
 	}

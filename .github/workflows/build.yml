@@ -3,13 +3,40 @@ name: Build
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+
+      - name: Cache Go modules
+        uses: actions/cache@v6
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Verify modules
+        run: go mod verify
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -23,22 +50,26 @@ jobs:
           npm ci
           npx svelte-kit sync
           npm run svelte-check
+        if: runner.os == 'Windows'
+
+      - name: Install & check SPA
+        run: |
+          cd web
+          npm ci
+          npx svelte-kit sync
+          npm run svelte-check
+        if: runner.os != 'Windows'
 
       - name: Build SPA
         run: |
           cd web
           npm run build
 
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26'
-
       - name: Build binary
-        run: go build -ldflags="-s -w" -o LocalAI.exe .
+        run: go build -ldflags="-s -w" -o LocalAI .
 
-      - name: Upload exe
+      - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: LocalAI-Windows-x64
-          path: LocalAI.exe
+          name: LocalAI-${{ runner.os }}-x64
+          path: LocalAI*

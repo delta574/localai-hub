@@ -14,6 +14,7 @@ import (
 	"github.com/delta574/localai-hub/internal/config"
 	"github.com/delta574/localai-hub/internal/download"
 	"github.com/delta574/localai-hub/internal/hardware"
+	"github.com/delta574/localai-hub/internal/httputil"
 	"github.com/delta574/localai-hub/internal/llm"
 
 	"github.com/go-chi/chi/v5"
@@ -37,14 +38,11 @@ func New(cfg *config.Config, hw *hardware.Info, d *download.Downloader, l *llm.M
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
-}
-
-func writeError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
+func writeSSEHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
 }
 
 func (h *Handler) SystemInfo(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +51,6 @@ func (h *Handler) SystemInfo(w http.ResponseWriter, r *http.Request) {
 		installed = []string{}
 	}
 
-	h.cfg.RLock()
 	info := map[string]any{
 		"ram": map[string]int{
 			"total": h.hw.RAMTotalGB,
@@ -67,16 +64,19 @@ func (h *Handler) SystemInfo(w http.ResponseWriter, r *http.Request) {
 		"recommendedModel": download.Recommend(h.hw.RAMFreeGB),
 		"installedModels":  installed,
 		"llamaServerRunning": h.llm.IsRunning(),
-		"activeModel":       h.cfg.ActiveModel,
-		"systemPrompt":     h.cfg.SystemPrompt,
-		"temperature":      h.cfg.Temperature,
+		"activeModel":   h.cfg.ViewActiveModel(),
+		"systemPrompt": h.cfg.GetSystemPrompt(),
+		"temperature":  h.cfg.GetTemperature(),
 	}
-	h.cfg.RUnlock()
-	writeJSON(w, http.StatusOK, info)
+	httputil.WriteJSON(w, http.StatusOK, info)
 }
 
 func (h *Handler) ListModels(w http.ResponseWriter, r *http.Request) {
-	installed, _ := h.downloader.InstalledModels()
+	installed, err := h.downloader.InstalledModels()
+	if err != nil {
+		slog.Error("list installed models", "error", err)
+		installed = []string{}
+	}
 	installedSet := make(map[string]bool)
 	for _, name := range installed {
 		installedSet[name] = true
@@ -96,7 +96,7 @@ func (h *Handler) ListModels(w http.ResponseWriter, r *http.Request) {
 			"file":      m.HFFile,
 		})
 	}
-	writeJSON(w, http.StatusOK, models)
+	httputil.WriteJSON(w, http.StatusOK, models)
 }
 
 func (h *Handler) PullModel(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +104,7 @@ func (h *Handler) PullModel(w http.ResponseWriter, r *http.Request) {
 		ModelID string `json:"model"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid request")
 		return
 	}
 
@@ -116,25 +116,22 @@ func (h *Handler) PullModel(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if model == nil {
-		writeError(w, http.StatusNotFound, "unknown model")
+		httputil.WriteError(w, http.StatusNotFound, "unknown model")
 		return
 	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		writeError(w, http.StatusInternalServerError, "streaming not supported")
+		httputil.WriteError(w, http.StatusInternalServerError, "streaming not supported")
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no")
+	writeSSEHeaders(w)
 
 	events := make(chan download.ProgressEvent)
 	if err := h.downloader.StartPull(r.Context(), model, events); err != nil {
 		slog.Error("pull failed", "error", err)
-		writeError(w, http.StatusConflict, err.Error())
+		httputil.WriteError(w, http.StatusConflict, err.Error())
 		return
 	}
 
@@ -148,14 +145,18 @@ func (h *Handler) PullModel(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteModel(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := h.downloader.DeleteModel(id); err != nil {
-		writeError(w, http.StatusNotFound, "model not found")
+		httputil.WriteError(w, http.StatusNotFound, "model not found")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) OpenAIModels(w http.ResponseWriter, r *http.Request) {
-	installed, _ := h.downloader.InstalledModels()
+	installed, err := h.downloader.InstalledModels()
+	if err != nil {
+		slog.Error("list installed models", "error", err)
+		installed = []string{}
+	}
 	data := make([]map[string]any, 0, len(installed))
 	for _, name := range installed {
 		data = append(data, map[string]any{
@@ -165,7 +166,7 @@ func (h *Handler) OpenAIModels(w http.ResponseWriter, r *http.Request) {
 			"owned_by": "local",
 		})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
+	httputil.WriteJSON(w, http.StatusOK, map[string]any{
 		"object": "list",
 		"data":   data,
 	})
@@ -174,7 +175,7 @@ func (h *Handler) OpenAIModels(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "cannot read body")
+		httputil.WriteError(w, http.StatusBadRequest, "cannot read body")
 		return
 	}
 
@@ -187,16 +188,14 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 		} `json:"messages"`
 	}
 	if err := json.Unmarshal(body, &chatReq); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
 
-	h.cfg.RLock()
 	targetModel := chatReq.Model
 	if targetModel == "" {
-		targetModel = h.cfg.ActiveModel
+		targetModel = h.cfg.ViewActiveModel()
 	}
-	h.cfg.RUnlock()
 
 	modelPath := ""
 	if targetModel != "" {
@@ -208,28 +207,29 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if modelPath == "" {
-		installed, _ := h.downloader.InstalledModels()
+	installed, err := h.downloader.InstalledModels()
+	if err != nil {
+		slog.Error("list installed models", "error", err)
+		installed = []string{}
+	}
 		for _, name := range installed {
 			modelPath = filepath.Join(h.downloader.ModelsDir(), name)
 			break
 		}
 	}
 	if modelPath == "" {
-		writeError(w, http.StatusNotFound, "no model installed")
+		httputil.WriteError(w, http.StatusNotFound, "no model installed")
 		return
 	}
 
 	if err := h.llm.Start(modelPath); err != nil {
 		slog.Error("failed to start llama-server", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to start inference engine: "+err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, "failed to start inference engine")
 		return
 	}
 
 	if chatReq.Stream {
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("X-Accel-Buffering", "no")
+		writeSSEHeaders(w)
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 	}
@@ -243,7 +243,7 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 				f.Flush()
 			}
 		} else {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			httputil.WriteError(w, http.StatusInternalServerError, "chat completion failed")
 		}
 	}
 }
@@ -259,7 +259,7 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 	dir := filepath.Join(h.dataDir, "conversations")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		writeJSON(w, http.StatusOK, []any{})
+		httputil.WriteJSON(w, http.StatusOK, []any{})
 		return
 	}
 
@@ -283,7 +283,7 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-	writeJSON(w, http.StatusOK, convs)
+	httputil.WriteJSON(w, http.StatusOK, convs)
 }
 
 func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
@@ -292,7 +292,7 @@ func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
 	f, err := os.Create(path)
 	if err != nil {
 		slog.Error("create conversation file", "error", err)
-		writeError(w, http.StatusInternalServerError, "create failed")
+		httputil.WriteError(w, http.StatusInternalServerError, "create failed")
 		return
 	}
 	defer f.Close()
@@ -302,35 +302,39 @@ func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
 		"created":  time.Now(),
 	}); err != nil {
 		slog.Error("write conversation file", "error", err)
-		writeError(w, http.StatusInternalServerError, "write failed")
+		httputil.WriteError(w, http.StatusInternalServerError, "write failed")
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
+	httputil.WriteJSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
 func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if !sanitizeConvID(id) {
-		writeError(w, http.StatusBadRequest, "invalid conversation id")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid conversation id")
 		return
 	}
 	path := filepath.Join(h.dataDir, "conversations", id+".json")
 	f, err := os.Open(path)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "conversation not found")
+		httputil.WriteError(w, http.StatusNotFound, "conversation not found")
 		return
 	}
 	defer f.Close()
 
 	var data map[string]any
-	json.NewDecoder(f).Decode(&data)
-	writeJSON(w, http.StatusOK, data)
+	if err := json.NewDecoder(f).Decode(&data); err != nil {
+		slog.Error("decode conversation", "error", err)
+		httputil.WriteError(w, http.StatusInternalServerError, "read failed")
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, data)
 }
 
 func (h *Handler) UpdateConversation(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if !sanitizeConvID(id) {
-		writeError(w, http.StatusBadRequest, "invalid conversation id")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid conversation id")
 		return
 	}
 	path := filepath.Join(h.dataDir, "conversations", id+".json")
@@ -340,7 +344,7 @@ func (h *Handler) UpdateConversation(w http.ResponseWriter, r *http.Request) {
 		Title    string              `json:"title"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
 
@@ -352,27 +356,27 @@ func (h *Handler) UpdateConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	f, err := os.Create(path)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "save failed")
+		httputil.WriteError(w, http.StatusInternalServerError, "save failed")
 		return
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(data)
-	writeJSON(w, http.StatusOK, data)
+	httputil.WriteJSON(w, http.StatusOK, data)
 }
 
 func (h *Handler) DeleteConversation(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if !sanitizeConvID(id) {
-		writeError(w, http.StatusBadRequest, "invalid conversation id")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid conversation id")
 		return
 	}
 	path := filepath.Join(h.dataDir, "conversations", id+".json")
 	if err := os.Remove(path); err != nil {
 		if os.IsNotExist(err) {
-			writeError(w, http.StatusNotFound, "conversation not found")
+			httputil.WriteError(w, http.StatusNotFound, "conversation not found")
 		} else {
 			slog.Error("delete conversation", "error", err)
-			writeError(w, http.StatusInternalServerError, "delete failed")
+			httputil.WriteError(w, http.StatusInternalServerError, "delete failed")
 		}
 		return
 	}
@@ -382,13 +386,11 @@ func (h *Handler) DeleteConversation(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var updates map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
 
-	h.cfg.Lock()
-	defer h.cfg.Unlock()
-
+	h.cfg.Update(func() {
 	if v, ok := updates["port"]; ok {
 		if p, ok := v.(float64); ok {
 			h.cfg.Port = int(p)
@@ -424,13 +426,9 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 			h.cfg.ContextSize = int(c)
 		}
 	}
+	})
 
-	if err := h.cfg.Save(); err != nil {
-		slog.Error("failed to save config", "error", err)
-		writeError(w, http.StatusInternalServerError, "save failed")
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func toKeyResp(entry auth.ApiKeyEntry) map[string]any {
@@ -445,13 +443,12 @@ func toKeyResp(entry auth.ApiKeyEntry) map[string]any {
 }
 
 func (h *Handler) ListApiKeys(w http.ResponseWriter, r *http.Request) {
-	h.cfg.RLock()
-	keys := make([]map[string]any, 0, len(h.cfg.ApiKeys))
-	for _, k := range h.cfg.ApiKeys {
+	entries := h.cfg.GetApiKeys()
+	keys := make([]map[string]any, 0, len(entries))
+	for _, k := range entries {
 		keys = append(keys, toKeyResp(k))
 	}
-	h.cfg.RUnlock()
-	writeJSON(w, http.StatusOK, map[string]any{"keys": keys})
+	httputil.WriteJSON(w, http.StatusOK, map[string]any{"keys": keys})
 }
 
 func (h *Handler) CreateApiKey(w http.ResponseWriter, r *http.Request) {
@@ -459,31 +456,27 @@ func (h *Handler) CreateApiKey(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+		httputil.WriteError(w, http.StatusBadRequest, "name is required")
 		return
 	}
 
-	h.cfg.Lock()
 	id, rawKey, err := h.cfg.AddApiKey(req.Name)
-	h.cfg.Unlock()
 
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to create key")
+		httputil.WriteError(w, http.StatusInternalServerError, "failed to create key")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]string{"id": id, "key": rawKey})
+	httputil.WriteJSON(w, http.StatusCreated, map[string]string{"id": id, "key": rawKey})
 }
 
 func (h *Handler) DeleteApiKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	h.cfg.Lock()
 	err := h.cfg.DeleteApiKey(id)
-	h.cfg.Unlock()
 
 	if err != nil {
-		writeError(w, http.StatusNotFound, "key not found")
+		httputil.WriteError(w, http.StatusNotFound, "key not found")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -492,13 +485,11 @@ func (h *Handler) DeleteApiKey(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ToggleApiKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	h.cfg.Lock()
 	err := h.cfg.ToggleApiKey(id)
-	h.cfg.Unlock()
 
 	if err != nil {
-		writeError(w, http.StatusNotFound, "key not found")
+		httputil.WriteError(w, http.StatusNotFound, "key not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
