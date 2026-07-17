@@ -256,7 +256,7 @@ localai-hub/
 
 | Layer | Technology | Why |
 |-------|-----------|-----|
-| Language | **Go 1.26** | Single binary, small footprint, cross-compile |
+| Language | **Go 1.24** | Single binary, small footprint, cross-compile |
 | HTTP Router | **chi** | Lightweight, stdlib-compatible, SSE-friendly |
 | Frontend | **Svelte 5 + SvelteKit** | ~3 KB bundle, runes reactivity, SPA mode |
 | Markdown | **@humanspeak/svelte-markdown** | Streaming-safe, XSS-protected, actively maintained |
