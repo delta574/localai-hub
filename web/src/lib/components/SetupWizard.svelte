@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { getSystemInfo, listModels, pullModel, updateConfig, type SystemInfo, type ModelInfo, type ProgressEvent } from '$lib/api';
 
-	let { onDone } = $props<{ onDone?: () => void }>();
+	let { onDone, sysInfo } = $props<{ onDone?: () => void; sysInfo?: SystemInfo | null }>();
 
-	let sysInfo = $state<SystemInfo | null>(null);
 	let models = $state<ModelInfo[]>([]);
 	let downloading = $state<string | null>(null);
 	let progress = $state<ProgressEvent | null>(null);
@@ -11,8 +10,7 @@
 	let done = $state(false);
 
 	$effect(() => {
-		getSystemInfo().then((i) => sysInfo = i);
-		listModels().then((m) => models = m);
+		listModels().then((m) => models = m).catch(() => {});
 	});
 
 	function startDownload(id: string) {

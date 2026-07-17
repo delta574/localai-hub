@@ -25,17 +25,34 @@
 		getSystemInfo().then((info) => {
 			sysInfo = info;
 			showWizard = info.isFirstLaunch || (info.installedModels.length === 0 && !info.llamaServerRunning);
-		});
-		loadConvs();
+		}).catch(() => {});
+		loadConvs().catch(() => {});
 	});
 
 	$effect(() => {
-		const interval = setInterval(() => {
-			getSystemInfo()
-				.then((info) => { sysInfo = info; })
-				.catch(() => {});
-		}, 5000);
-		return () => clearInterval(interval);
+		let polling = true;
+		let timer: ReturnType<typeof setTimeout>;
+
+		async function poll() {
+			if (!polling) return;
+			if (!document.hidden) {
+				try {
+					sysInfo = await getSystemInfo();
+				} catch {
+					// network errors non-fatal
+				}
+			}
+			if (polling) timer = setTimeout(poll, 5000);
+		}
+
+		const onShow = () => { if (!document.hidden) poll(); };
+		document.addEventListener('visibilitychange', onShow);
+		poll();
+		return () => {
+			polling = false;
+			clearTimeout(timer);
+			document.removeEventListener('visibilitychange', onShow);
+		};
 	});
 
 	async function newChat() {
@@ -58,7 +75,7 @@
 
 {#if sysInfo !== null}
 	{#if showWizard}
-		<SetupWizard onDone={() => { showWizard = false; getSystemInfo().then(i => sysInfo = i); }} />
+		<SetupWizard onDone={() => { showWizard = false; getSystemInfo().then(i => sysInfo = i).catch(() => {}); }} {sysInfo} />
 	{/if}
 
 	<nav class="sidebar">
@@ -95,7 +112,7 @@
 
 	<main class="main">
 		{#if page === 'chat'}
-			<Chat conversationId={activeConv} onTitleChange={onTitleChange} />
+			<Chat conversationId={activeConv} onTitleChange={onTitleChange} systemPrompt={sysInfo?.systemPrompt} temperature={sysInfo?.temperature} activeModel={sysInfo?.activeModel} />
 		{:else if page === 'models'}
 			<ModelsPage />
 		{:else if page === 'settings'}

@@ -1,31 +1,20 @@
 <script lang="ts">
 	import SvelteMarkdown from '@humanspeak/svelte-markdown';
-	import { chatCompletion, getSystemInfo, createConversation, updateConversation, getConversation } from '$lib/api';
+	import { chatCompletion, createConversation, updateConversation, getConversation } from '$lib/api';
 
 	interface Message {
 		role: 'user' | 'assistant';
 		content: string;
 	}
 
-	let { conversationId, onTitleChange } = $props<{ conversationId: string | null; onTitleChange?: (id: string, title: string) => void }>();
+	let { conversationId, onTitleChange, systemPrompt = '', temperature = 0.7, activeModel = '' } = $props<{ conversationId: string | null; onTitleChange?: (id: string, title: string) => void; systemPrompt?: string; temperature?: number; activeModel?: string }>();
 
 	let messages = $state<Message[]>([]);
 	let input = $state('');
 	let streaming = $state(false);
 	let abortCtrl = $state<AbortController | null>(null);
-	let systemPrompt = $state('');
-	let temperature = $state(0.7);
-	let activeModel = $state('');
 	let currentId = $state<string | null>(null);
 	let pendingSave = $state(false);
-
-	$effect(() => {
-		getSystemInfo().then((info) => {
-			systemPrompt = info.systemPrompt;
-			temperature = info.temperature;
-			activeModel = info.activeModel;
-		});
-	});
 
 	$effect(() => {
 		if (conversationId && conversationId !== currentId) {
@@ -136,6 +125,7 @@
 			placeholder="Type a message..."
 			rows="1"
 			disabled={streaming}
+			name="chat-input"
 		></textarea>
 		{#if streaming}
 			<button class="btn-stop" onclick={stop}>Stop</button>

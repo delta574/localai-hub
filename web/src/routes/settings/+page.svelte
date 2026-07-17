@@ -18,8 +18,8 @@
 	onDestroy(() => clearTimeout(savedTimer));
 
 	$effect(() => {
-		getSystemInfo().then((i) => { info = i; prompt = i.systemPrompt; temp = i.temperature; });
-		listModels().then((m) => models = m);
+		getSystemInfo().then((i) => { info = i; prompt = i.systemPrompt; temp = i.temperature; }).catch(() => {});
+		listModels().then((m) => models = m).catch(() => {});
 		loadKeys();
 	});
 
@@ -124,12 +124,12 @@
 
 	<div class="form-section">
 		<div>
-			<label class="label">System Prompt</label>
-			<textarea class="textarea" bind:value={prompt} rows="4"></textarea>
+			<label class="label" for="system-prompt">System Prompt</label>
+			<textarea class="textarea" bind:value={prompt} rows="4" id="system-prompt"></textarea>
 		</div>
 		<div>
-			<label class="label">Temperature: {temp.toFixed(1)}</label>
-			<input type="range" bind:value={temp} min="0" max="2" step="0.1" class="range" />
+			<label class="label" for="temperature">Temperature: {temp.toFixed(1)}</label>
+			<input type="range" bind:value={temp} min="0" max="2" step="0.1" class="range" id="temperature" />
 		</div>
 		<button class="btn-primary" onclick={save}>
 			{saved ? 'Saved!' : 'Save Settings'}
@@ -179,7 +179,7 @@
 				{:else}
 					<h4 class="card-subtitle">Generate New Key</h4>
 					<div class="key-input-row">
-						<input class="input" bind:value={newKeyName} placeholder="e.g. opencode, VS Code, Open WebUI" autocomplete="off" />
+						<input class="input" bind:value={newKeyName} placeholder="e.g. opencode, VS Code, Open WebUI" autocomplete="off" name="key-name" />
 						<button class="btn-primary" onclick={genKey} disabled={!newKeyName.trim()}>Generate</button>
 					</div>
 					<button class="btn-cancel" onclick={() => showNewKey = false}>Cancel</button>
