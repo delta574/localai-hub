@@ -4,7 +4,7 @@ project_name: LocalAI
 before:
   hooks:
     - go mod tidy
-    - cp -r web/build dist/web
+    - mkdir -p dist/web && cp -r web/build/. dist/web/
 
 builds:
   - env:

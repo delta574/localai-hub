@@ -5,6 +5,19 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      svelte:
+        patterns:
+          - "@sveltejs/*"
+          - "svelte"
+      vite:
+        patterns:
+          - "vite"
+          - "@vitejs/*"
+      typescript:
+        patterns:
+          - "typescript"
+          - "typescript-eslint"
 
   - package-ecosystem: "gomod"
     directory: "/"
