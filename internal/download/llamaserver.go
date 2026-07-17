@@ -176,7 +176,7 @@ func (d *LlamaServerDownloader) extractZip(path string) error {
 	for _, f := range zr.File {
 		name := filepath.Clean(f.Name)
 		if strings.Contains(name, "..") {
-			continue
+			return fmt.Errorf("invalid archive entry: %s (path traversal)", f.Name)
 		}
 		outPath := filepath.Join(d.binDir, name)
 
@@ -237,6 +237,9 @@ func (d *LlamaServerDownloader) extractTarGz(path string) error {
 		}
 		if name == "" {
 			continue
+		}
+		if strings.Contains(name, "..") {
+			return fmt.Errorf("invalid archive entry: %s (path traversal)", header.Name)
 		}
 
 		outPath := filepath.Join(d.binDir, name)

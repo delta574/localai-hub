@@ -65,9 +65,7 @@ func (m *Manager) Start(modelPath string) error {
 	}
 
 	if m.running {
-		m.mu.Unlock()
 		m.stopLocked()
-		m.mu.Lock()
 	}
 
 	llamaPath := m.llamaServerPath()
@@ -122,7 +120,9 @@ func (m *Manager) Start(modelPath string) error {
 
 	err := m.waitForHealth(60 * time.Second)
 	if err != nil {
-		slog.Error("llama-server not healthy", "stderr", stderrBuf.String())
+		slog.Error("llama-server not healthy, stopping", "stderr", stderrBuf.String())
+		m.cmd.Process.Kill()
+		m.running = false
 	}
 	return err
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -82,8 +83,8 @@ func rateLimit(limit int, window time.Duration) func(http.Handler) http.Handler 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ip := r.RemoteAddr
-			if idx := strings.LastIndex(ip, ":"); idx >= 0 {
-				ip = ip[:idx]
+			if host, _, err := net.SplitHostPort(ip); err == nil {
+				ip = host
 			}
 			if !rl.check(ip) {
 				httputil.WriteJSON(w, http.StatusTooManyRequests, map[string]string{"error": "rate limit exceeded"})
@@ -126,6 +127,7 @@ func (s *Server) RegisterAPI(h *api.Handler) {
 	s.api = h
 
 	s.router.Route("/api", func(r chi.Router) {
+		r.Use(rateLimit(100, time.Minute))
 		r.Get("/system/info", h.SystemInfo)
 		r.Get("/models", h.ListModels)
 		r.With(rateLimit(20, time.Minute)).Post("/models/pull", h.PullModel)
@@ -197,7 +199,7 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'")
 		next.ServeHTTP(w, r)
 	})
 }
