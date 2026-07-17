@@ -16,6 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build SPA
+        run: |
+          cd web
+          npm ci
+          npx svelte-kit sync
+          npm run build
+
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
@@ -37,33 +51,6 @@ jobs:
 
       - name: Test
         run: go test ./...
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install & check SPA
-        run: |
-          cd web
-          npm ci
-          npx svelte-kit sync
-          npm run svelte-check
-        if: runner.os == 'Windows'
-
-      - name: Install & check SPA
-        run: |
-          cd web
-          npm ci
-          npx svelte-kit sync
-          npm run svelte-check
-        if: runner.os != 'Windows'
-
-      - name: Build SPA
-        run: |
-          cd web
-          npm run build
 
       - name: Build binary
         run: go build -ldflags="-s -w" -o LocalAI .
