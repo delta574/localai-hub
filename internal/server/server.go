@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -54,14 +55,60 @@ func (s *Server) RegisterAPI(h *api.Handler) {
 		r.Put("/conversations/{id}", h.UpdateConversation)
 		r.Delete("/conversations/{id}", h.DeleteConversation)
 		r.Put("/config", h.UpdateConfig)
+		r.Get("/keys", h.ListApiKeys)
+		r.Post("/keys", h.CreateApiKey)
+		r.Delete("/keys/{id}", h.DeleteApiKey)
+		r.Put("/keys/{id}/toggle", h.ToggleApiKey)
 	})
 
-	s.router.With(maxBodySize).Post("/v1/chat/completions", h.ChatCompletions)
-	s.router.With(maxBodySize).Get("/v1/models", h.OpenAIModels)
+	s.router.Route("/v1", func(r chi.Router) {
+		r.Use(maxBodySize)
+		r.Use(s.apiKeyMiddleware)
+		r.Post("/chat/completions", h.ChatCompletions)
+		r.Get("/models", h.OpenAIModels)
+	})
 
 	if s.staticFS != nil {
 		s.router.Get("/*", s.serveStatic)
 	}
+}
+
+func (s *Server) apiKeyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.cfg.RLock()
+		hasKeys := s.cfg.HasApiKeys()
+		s.cfg.RUnlock()
+
+		if !hasKeys {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		auth := r.Header.Get("Authorization")
+		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing API key"})
+			return
+		}
+
+		token := strings.TrimPrefix(auth, "Bearer ")
+
+		s.cfg.Lock()
+		entry := s.cfg.VerifyApiKey(token)
+		s.cfg.Unlock()
+
+		if entry == nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid API key"})
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
 }
 
 func (s *Server) Router() *chi.Mux {

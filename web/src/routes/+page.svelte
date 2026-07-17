@@ -105,6 +105,7 @@
 <style>
 	:global(body) {
 		display: flex;
+		height: 100dvh;
 		margin: 0;
 	}
 
@@ -128,7 +129,7 @@
 	.dot { width: 8px; height: 8px; border-radius: 50%; }
 	.dot.green { background: #22c55e; }
 	.dot.red { background: #ef4444; }
-	.main { flex: 1; overflow: hidden; }
+	.main { flex: 1; overflow-y: auto; }
 	.conv-header {
 		display: flex; align-items: center; justify-content: space-between;
 		font-size: 0.75rem; color: var(--text2); text-transform: uppercase;

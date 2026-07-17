@@ -184,3 +184,35 @@ export async function updateConfig(updates: Record<string, unknown>): Promise<vo
 		body: JSON.stringify(updates)
 	}));
 }
+
+export interface ApiKeyInfo {
+	id: string;
+	name: string;
+	prefix: string;
+	createdAt: string;
+	lastUsedAt: string;
+	enabled: boolean;
+}
+
+export async function listApiKeys(): Promise<ApiKeyInfo[]> {
+	const res = await checkRes(await fetch(`${BASE}/api/keys`));
+	const data = await res.json();
+	return data.keys;
+}
+
+export async function createApiKey(name: string): Promise<{ id: string; key: string }> {
+	const res = await checkRes(await fetch(`${BASE}/api/keys`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ name })
+	}));
+	return res.json();
+}
+
+export async function deleteApiKey(id: string): Promise<void> {
+	await checkRes(await fetch(`${BASE}/api/keys/${id}`, { method: 'DELETE' }));
+}
+
+export async function toggleApiKey(id: string): Promise<void> {
+	await checkRes(await fetch(`${BASE}/api/keys/${id}/toggle`, { method: 'PUT' }));
+}
