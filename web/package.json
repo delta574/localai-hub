@@ -21,7 +21,7 @@
 		"svelte": "^5.25.0",
 		"svelte-check": "^4.7.3",
 		"typescript": "^5.8.0",
-		"vite": "^6.3.0"
+		"vite": "^8.1.5"
 	},
 	"dependencies": {
 		"@humanspeak/svelte-markdown": "^1.8.4"
