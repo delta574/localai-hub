@@ -28,6 +28,9 @@ jobs:
           npx svelte-kit sync
           npm run build
 
+      - name: Copy SPA build
+        run: mkdir -p dist/web && cp -r web/build/. dist/web/
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
