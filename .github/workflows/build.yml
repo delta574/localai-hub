@@ -52,6 +52,15 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: npm audit
+        working-directory: web
+        run: npm audit --audit-level=high
+
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
       - name: Build binary
         run: go build -ldflags="-s -w" -o LocalAI .
 

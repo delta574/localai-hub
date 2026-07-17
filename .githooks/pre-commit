@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+echo "→ go fmt ./..."
+go fmt ./...
+
+echo "→ go vet ./..."
+go vet ./...
+
+if [ -d web/node_modules ]; then
+  echo "→ npx svelte-check"
+  cd web && npx svelte-check --fail-on-warnings && cd ..
+fi

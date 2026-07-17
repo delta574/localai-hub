@@ -30,5 +30,8 @@ run: build
 installer: build
 	"C:/Program Files (x86)/NSIS/makensis.exe" installer/installer.nsi
 
+hooks:
+	git config core.hooksPath .githooks
+
 clean:
 	rm -rf web/build web/node_modules dist/LocalAI*.exe

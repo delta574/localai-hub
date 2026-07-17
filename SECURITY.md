@@ -8,8 +8,9 @@
 
 ## Reporting a Vulnerability
 
-To report a security vulnerability, email the maintainer directly at
-**[INSERT MAINTAINER EMAIL]**.
+To report a security vulnerability, open a GitHub issue at
+https://github.com/delta574/localai-hub/issues (mark it as sensitive)
+or email the maintainer at delta574@users.noreply.github.com.
 
 Do **not** open a public GitHub issue for security vulnerabilities.
 
