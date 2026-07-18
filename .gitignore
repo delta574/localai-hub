@@ -26,4 +26,10 @@ Thumbs.db
 *.exe
 *.dll
 *.test
+*~
+
+# coverage reports
+coverage*
+coverage*.out
+
 node_modules/

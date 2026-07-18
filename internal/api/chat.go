@@ -33,7 +33,7 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	targetModel := chatReq.Model
 	if targetModel == "" {
-		targetModel = h.cfg.ViewActiveModel()
+		targetModel = h.cfg.GetActiveModel()
 	}
 
 	modelPath := ""

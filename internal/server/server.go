@@ -200,8 +200,8 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		// script-src omitted: SvelteKit embeds per-page SHA-256 hashes via <meta> tags in prerendered HTML.
-	// style-src 'unsafe-inline' required for SvelteKit's dynamic style injection.
-	w.Header().Set("Content-Security-Policy", "img-src 'self' data:; style-src 'self' 'unsafe-inline'")
+		// style-src 'unsafe-inline' required for SvelteKit's dynamic style injection.
+		w.Header().Set("Content-Security-Policy", "img-src 'self' data:; style-src 'self' 'unsafe-inline'")
 		next.ServeHTTP(w, r)
 	})
 }

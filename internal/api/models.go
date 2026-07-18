@@ -102,9 +102,9 @@ func (h *Handler) OpenAIModels(w http.ResponseWriter, r *http.Request) {
 	data := make([]map[string]any, 0, len(installed))
 	for _, name := range installed {
 		data = append(data, map[string]any{
-			"id":      name,
-			"object":  "model",
-			"created": time.Now().Unix(),
+			"id":       name,
+			"object":   "model",
+			"created":  time.Now().Unix(),
 			"owned_by": "local",
 		})
 	}

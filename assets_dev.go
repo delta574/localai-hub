@@ -9,5 +9,3 @@ import (
 func staticFS() http.FileSystem {
 	return nil
 }
-
-

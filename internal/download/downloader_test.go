@@ -89,5 +89,8 @@ func TestStartPullConcurrentDuplicate(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "already in progress") {
 		t.Errorf("expected 'already in progress' error, got %v", err)
 	}
-	go func() { for range events {} }()
+	go func() {
+		for range events {
+		}
+	}()
 }

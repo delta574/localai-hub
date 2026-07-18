@@ -328,8 +328,8 @@ func TestConversation_SanitizeID(t *testing.T) {
 		id       string
 		validURL bool // whether chi routes this segment to the handler
 	}{
-		{strings.Repeat("x", 65), true},  // too long
-		{"foo..bar", true},                // contains ".." (not path traversal)
+		{strings.Repeat("x", 65), true}, // too long
+		{"foo..bar", true},              // contains ".." (not path traversal)
 	} {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/api/conversations/"+tc.id, nil)
@@ -792,8 +792,14 @@ func TestDownloader_ConcurrentPull(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	go func() { for range events1 {} }()
-	go func() { for range events2 {} }()
+	go func() {
+		for range events1 {
+		}
+	}()
+	go func() {
+		for range events2 {
+		}
+	}()
 }
 
 // --- Hardware ---

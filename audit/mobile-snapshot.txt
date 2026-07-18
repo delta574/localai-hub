@@ -1,0 +1,118 @@
+uid=8_0 RootWebArea "LocalAI Hub" url="http://localhost:8080/"
+  uid=11_0 ignored
+    uid=11_1 ignored
+      uid=11_2 generic
+        uid=8_1 navigation
+          uid=11_3 generic
+            uid=8_2 StaticText "LocalAI Hub"
+              uid=11_4 InlineTextBox "LocalAI Hub"
+          uid=11_5 ignored
+            uid=8_3 button "Chat"
+              uid=11_6 StaticText "Chat"
+                uid=11_4 InlineTextBox "Chat"
+            uid=8_4 button "Models"
+              uid=11_7 StaticText "Models"
+                uid=11_4 InlineTextBox "Models"
+            uid=8_5 button "Settings" focusable focused
+              uid=11_8 StaticText "Settings"
+                uid=11_4 InlineTextBox "Settings"
+          uid=11_9 ignored
+            uid=11_10 ignored
+            uid=11_11 ignored
+              uid=8_12 StaticText "Idle"
+                uid=11_4 InlineTextBox "Idle"
+        uid=8_13 main
+          uid=11_12 ignored
+            uid=10_0 heading "Settings" level="2"
+              uid=11_13 StaticText "Settings"
+                uid=11_4 InlineTextBox "Settings"
+            uid=11_14 ignored
+              uid=10_1 heading "System Info" level="3"
+                uid=11_15 StaticText "System Info"
+                  uid=11_4 InlineTextBox "System Info"
+              uid=11_16 ignored
+                uid=11_17 generic
+                  uid=10_2 StaticText "RAM"
+                    uid=11_4 InlineTextBox "RAM"
+                  uid=10_3 StaticText "3 GB total / 2 GB free"
+                    uid=11_4 InlineTextBox "3 GB total / 2 GB "
+                    uid=11_4 InlineTextBox "free"
+                uid=11_18 generic
+                  uid=10_4 StaticText "Free Disk"
+                    uid=11_4 InlineTextBox "Free Disk"
+                  uid=10_5 StaticText "135 GB"
+                    uid=11_4 InlineTextBox "135 GB"
+                uid=11_19 generic
+                  uid=10_6 StaticText "CPU"
+                    uid=11_4 InlineTextBox "CPU"
+                  uid=10_7 StaticText "4 cores"
+                    uid=11_4 InlineTextBox "4 cores"
+                uid=11_20 generic
+                  uid=10_8 StaticText "Platform"
+                    uid=11_4 InlineTextBox "Platform"
+                  uid=10_9 StaticText "windows amd64"
+                    uid=11_4 InlineTextBox "windows amd64"
+                uid=11_21 generic
+                  uid=10_10 StaticText "Engine"
+                    uid=11_4 InlineTextBox "Engine"
+                  uid=10_11 StaticText "Idle"
+                    uid=11_4 InlineTextBox "Idle"
+            uid=11_22 ignored
+              uid=10_12 heading "Active Model" level="3"
+                uid=11_23 StaticText "Active Model"
+                  uid=11_4 InlineTextBox "Active Model"
+              uid=10_13 combobox expandable haspopup="menu" value="Gemma 3 1B"
+                uid=11_24 MenuListPopup
+                  uid=10_14 option "-- Select a model --" selectable value="-- Select a model --"
+                  uid=10_15 option "Gemma 3 1B" selectable selected value="Gemma 3 1B"
+            uid=11_25 ignored
+              uid=11_26 ignored
+                uid=11_27 LabelText
+                  uid=10_16 StaticText "System Prompt"
+                    uid=11_4 InlineTextBox "System Prompt"
+                uid=10_17 textbox multiline value="You are a helpful assistant."
+                  uid=11_28 generic
+                    uid=11_29 StaticText "You are a helpful assistant."
+                      uid=11_4 InlineTextBox "You are a helpful assistant."
+              uid=11_30 ignored
+                uid=11_31 LabelText
+                  uid=10_18 StaticText "Temperature: 0.7"
+                    uid=11_4 InlineTextBox "Temperature: 0.7"
+                uid=10_19 slider orientation="horizontal" value="0.699999988079071" valuemax="2" valuemin="0" valuetext=""
+              uid=10_20 button "Save Settings"
+                uid=11_32 StaticText "Save Settings"
+                  uid=11_4 InlineTextBox "Save Settings"
+            uid=11_33 ignored
+              uid=10_21 heading "🔑 API Keys" level="3"
+                uid=11_34 StaticText "🔑 API Keys"
+                  uid=11_4 InlineTextBox "🔑 API Keys"
+              uid=11_35 paragraph
+                uid=10_22 StaticText "API keys allow external tools (opencode, VS Code, Open WebUI, curl) to connect to the OpenAI-compatible endpoint at "
+                  uid=11_4 InlineTextBox "API keys allow external tools (opencode, VS "
+                  uid=11_4 InlineTextBox "Code, Open WebUI, curl) to connect to the "
+                  uid=11_4 InlineTextBox "OpenAI-compatible endpoint at "
+                uid=11_36 code
+                  uid=10_23 StaticText "http://localhost:8080/v1"
+                    uid=11_4 InlineTextBox "http://localhost:8080/v1"
+                uid=10_24 StaticText ". When at least one key exists, all "
+                  uid=11_4 InlineTextBox ". When at "
+                  uid=11_4 InlineTextBox "least one key exists, all "
+                uid=11_37 code
+                  uid=10_25 StaticText "/v1/*"
+                    uid=11_4 InlineTextBox "/v1/*"
+                uid=10_26 StaticText " requests require "
+                  uid=11_4 InlineTextBox " requests "
+                  uid=11_4 InlineTextBox "require "
+                uid=11_38 code
+                  uid=10_27 StaticText "Authorization: Bearer <key>"
+                    uid=11_4 InlineTextBox "Authorization: Bearer <key>"
+                uid=10_28 StaticText "."
+                  uid=11_4 InlineTextBox "."
+              uid=11_39 generic
+                uid=10_29 StaticText "No API keys yet. Generate one to enable authenticated access."
+                  uid=11_4 InlineTextBox "No API keys yet. Generate one to "
+                  uid=11_4 InlineTextBox "enable authenticated access."
+              uid=10_30 button "+ Generate New Key"
+                uid=11_40 StaticText "+ Generate New Key"
+                  uid=11_4 InlineTextBox "+ Generate New Key"
+        uid=8_20 generic atomic live="assertive" relevant="additions text"

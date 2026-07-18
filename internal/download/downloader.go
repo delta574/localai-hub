@@ -14,13 +14,13 @@ import (
 )
 
 type ProgressEvent struct {
-	Type             string  `json:"type"`
-	ModelID          string  `json:"modelId,omitempty"`
-	BytesDownloaded  int64   `json:"bytesDownloaded,omitempty"`
-	TotalBytes       int64   `json:"totalBytes,omitempty"`
-	Percent          float64 `json:"percent,omitempty"`
-	Speed            int64   `json:"speed,omitempty"`
-	Message          string  `json:"message,omitempty"`
+	Type            string  `json:"type"`
+	ModelID         string  `json:"modelId,omitempty"`
+	BytesDownloaded int64   `json:"bytesDownloaded,omitempty"`
+	TotalBytes      int64   `json:"totalBytes,omitempty"`
+	Percent         float64 `json:"percent,omitempty"`
+	Speed           int64   `json:"speed,omitempty"`
+	Message         string  `json:"message,omitempty"`
 }
 
 type Downloader struct {
