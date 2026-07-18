@@ -26,10 +26,9 @@ import (
 
 // mockLLM implements LLMBackend for testing without a real llama-server.
 type mockLLM struct {
-	mu        sync.Mutex
-	running   bool
-	started   string
-	responses map[string]string
+	mu      sync.Mutex
+	running bool
+	started string
 }
 
 func (m *mockLLM) IsRunning() bool {
