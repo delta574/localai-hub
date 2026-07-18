@@ -7,7 +7,16 @@ const config = {
 	kit: {
 		adapter: adapter({
 			fallback: 'index.html'
-		})
+		}),
+		csp: {
+			mode: 'hash',
+			directives: {
+				'default-src': ['self'],
+				'script-src': ['self'],
+				'img-src': ['self', 'data:'],
+				'style-src': ['self', 'unsafe-inline']
+			}
+		}
 	}
 };
 

@@ -34,8 +34,9 @@ func TestSecurityHeaders(t *testing.T) {
 	if csp == "" {
 		t.Error("expected Content-Security-Policy")
 	}
-	if !strings.Contains(csp, "script-src 'self'") {
-		t.Error("expected script-src 'self' in CSP")
+	// script-src is omitted — SvelteKit embeds per-page SHA-256 hashes via <meta> tags
+	if strings.Contains(csp, "script-src") {
+		t.Error("expected no script-src in server CSP (handled by SvelteKit meta tags)")
 	}
 }
 
