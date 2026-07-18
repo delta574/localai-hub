@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -15,20 +16,25 @@ import (
 	"github.com/delta574/localai-hub/internal/download"
 	"github.com/delta574/localai-hub/internal/hardware"
 	"github.com/delta574/localai-hub/internal/httputil"
-	"github.com/delta574/localai-hub/internal/llm"
 
 	"github.com/go-chi/chi/v5"
 )
+
+type LLMBackend interface {
+	IsRunning() bool
+	Start(modelPath string) error
+	ChatCompletionsRaw(ctx context.Context, w io.Writer, body []byte) error
+}
 
 type Handler struct {
 	cfg        *config.Config
 	hw         *hardware.Info
 	downloader *download.Downloader
-	llm        *llm.Manager
+	llm        LLMBackend
 	dataDir    string
 }
 
-func New(cfg *config.Config, hw *hardware.Info, d *download.Downloader, l *llm.Manager, dataDir string) *Handler {
+func New(cfg *config.Config, hw *hardware.Info, d *download.Downloader, l LLMBackend, dataDir string) *Handler {
 	return &Handler{
 		cfg:        cfg,
 		hw:         hw,

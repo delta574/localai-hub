@@ -40,6 +40,8 @@ func New(dataDir string) *Downloader {
 	}
 }
 
+func (d *Downloader) SetClient(c *http.Client) { d.client = c }
+
 func (d *Downloader) ModelsDir() string {
 	return filepath.Join(d.dataDir, "models")
 }
