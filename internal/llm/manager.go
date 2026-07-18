@@ -17,12 +17,12 @@ import (
 )
 
 type Manager struct {
-	dataDir     string
-	cmd         *exec.Cmd
-	port        int
-	mu          sync.Mutex
-	running     bool
-	modelPath   string
+	dataDir   string
+	cmd       *exec.Cmd
+	port      int
+	mu        sync.Mutex
+	running   bool
+	modelPath string
 }
 
 func NewManager(dataDir string) *Manager {

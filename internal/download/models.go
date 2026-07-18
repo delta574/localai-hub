@@ -1,14 +1,14 @@
 package download
 
 type Model struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	HFRepo   string `json:"hfRepo"`
-	HFFile   string `json:"hfFile"`
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	HFRepo   string  `json:"hfRepo"`
+	HFFile   string  `json:"hfFile"`
 	SizeGB   float64 `json:"sizeGB"`
-	MinRAMGB int    `json:"minRamGB"`
-	Quality  string `json:"quality"`
-	Tagline  string `json:"tagline"`
+	MinRAMGB int     `json:"minRamGB"`
+	Quality  string  `json:"quality"`
+	Tagline  string  `json:"tagline"`
 }
 
 var CuratedModels = []Model{

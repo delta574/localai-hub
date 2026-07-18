@@ -14,16 +14,16 @@ import (
 type Config struct {
 	mu sync.RWMutex
 
-	Port            int               `json:"port"`
-	Theme           string            `json:"theme"`
-	ActiveModel     string            `json:"activeModel"`
-	SystemPrompt    string            `json:"systemPrompt"`
-	Temperature     float64           `json:"temperature"`
-	MaxTokens       int               `json:"maxTokens"`
-	ContextSize     int               `json:"contextSize"`
-	LlamaServerPath string            `json:"llamaServerPath"`
+	Port            int                `json:"port"`
+	Theme           string             `json:"theme"`
+	ActiveModel     string             `json:"activeModel"`
+	SystemPrompt    string             `json:"systemPrompt"`
+	Temperature     float64            `json:"temperature"`
+	MaxTokens       int                `json:"maxTokens"`
+	ContextSize     int                `json:"contextSize"`
+	LlamaServerPath string             `json:"llamaServerPath"`
 	ApiKeys         []auth.ApiKeyEntry `json:"apiKeys"`
-	DataDir         string            `json:"-"`
+	DataDir         string             `json:"-"`
 }
 
 func Default(dataDir string) *Config {
@@ -140,18 +140,6 @@ func (c *Config) Update(fn func()) {
 	c.saveLocked()
 }
 
-func (c *Config) View(fn func()) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	fn()
-}
-
-func (c *Config) ViewActiveModel() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.ActiveModel
-}
-
 // --- API key methods ---
 
 func (c *Config) HasApiKeys() bool {
@@ -230,10 +218,4 @@ func (c *Config) GetApiKeys() []auth.ApiKeyEntry {
 	result := make([]auth.ApiKeyEntry, len(c.ApiKeys))
 	copy(result, c.ApiKeys)
 	return result
-}
-
-func (c *Config) GetPort() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.Port
 }

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Backend integration tests covering all API handlers (75% API coverage, 42.2% overall)
+- Frontend test suite (31 tests, Vitest + @testing-library/svelte + jsdom)
+- CSP hardening via SvelteKit `csp.mode = 'hash'` (SHA-256 per page, no `'unsafe-inline'` for scripts)
+- CI/CD: staticcheck and frontend tests added to build pipeline
+- Makefile targets: `test`, `test-backend`, `test-frontend`, `lint`
+
+### Changed
+
+- API package refactored from monolithic `api.go` into 7 domain files (handler, chat, models, conversation, config, apikey, sse)
+- `LLMBackend` interface extracted for decoupled testing
+- Documentation updated with testing section and accurate project structure
+- Go version badge fixed (1.26 → 1.24)
+
+### Removed
+
+- Dead code: `GetPort()`, `View()`, `ViewActiveModel()`, `GitHubRelease` struct
+- Stale build artifacts and coverage report files
+
+### Security
+
+- Content-Security-Policy: per-page SHA-256 hashes replace `'unsafe-inline'` for script-src
+
 ## [1.0.0] - 2026-07-17
 
 ### Added

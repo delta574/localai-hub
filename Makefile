@@ -33,5 +33,17 @@ installer: build
 hooks:
 	git config core.hooksPath .githooks
 
+test-backend:
+	go test ./... -count=1
+
+test-frontend:
+	cd web && npx vitest run
+
+test: test-backend test-frontend
+
+lint:
+	go vet ./...
+	go install honnef.co/go/tools/cmd/staticcheck@v0.6.0 && staticcheck ./...
+
 clean:
 	rm -rf web/build web/node_modules dist/LocalAI*.exe

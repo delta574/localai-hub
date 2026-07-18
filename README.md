@@ -6,7 +6,7 @@
 
 [![Build](https://github.com/delta574/localai-hub/actions/workflows/build.yml/badge.svg)](https://github.com/delta574/localai-hub/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go)](https://go.dev)
 [![Windows](https://img.shields.io/badge/Windows-0078D6?logo=windows)](https://github.com/delta574/localai-hub/actions)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux)](https://github.com/delta574/localai-hub/actions)
 [![macOS](https://img.shields.io/badge/macOS-000000?logo=apple)](https://github.com/delta574/localai-hub/actions)
@@ -213,12 +213,14 @@ localai-hub/
 ├── Makefile                   # Build and dev targets
 │
 ├── internal/
-│   ├── api/                   # HTTP handlers (system, models, chat, config, conversations)
+│   ├── api/                   # HTTP handlers (chat.go, config.go, conversation.go, handler.go, models.go, apikey.go, sse.go)
+│   ├── auth/                  # API key generation and verification
 │   ├── config/                # JSON config management
 │   ├── download/              # HuggingFace downloader + model list + llama-server downloader
 │   ├── hardware/              # RAM, CPU, disk detection (Windows + cross-platform)
+│   ├── httputil/              # Shared HTTP helpers (WriteJSON, WriteError)
 │   ├── llm/                   # llama-server subprocess manager, OpenAI proxy
-│   └── server/                # Chi router setup, static file serving, CORS
+│   └── server/                # Chi router setup, static file serving, CORS, security headers
 │
 ├── web/                       # SvelteKit SPA frontend
 │   ├── src/
@@ -286,6 +288,27 @@ Yes. All data (`models/`, `conversations/`, `config.json`) sits alongside the `.
 
 **Why 3.5 MB?**
 No Electron, no Python runtime — just Go with the SvelteKit frontend embedded via `//go:embed`.
+
+---
+
+## 🧪 Testing
+
+Backend (Go):
+```
+go test ./... -v -count=1
+```
+
+Frontend (Vitest):
+```
+cd web
+npx vitest run
+```
+
+Coverage:
+```
+go test ./... -coverprofile=coverage.out
+go tool cover -html=coverage.out
+```
 
 ---
 

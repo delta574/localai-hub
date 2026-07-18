@@ -16,10 +16,6 @@ import (
 
 const LlamaServerVersion = "b10034"
 
-type GitHubRelease struct {
-	TagName string `json:"tag_name"`
-}
-
 func (d *LlamaServerDownloader) LatestVersion() (string, error) {
 	return LlamaServerVersion, nil
 }
