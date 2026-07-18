@@ -49,8 +49,17 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Test
-        run: go test ./...
+      - name: Staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+      - name: Test (Backend)
+        run: go test ./... -count=1
+
+      - name: Test (Frontend)
+        working-directory: web
+        run: npx vitest run
 
       - name: npm audit
         working-directory: web
