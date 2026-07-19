@@ -2,7 +2,7 @@
 
 <img src="docs/logo/logo.png" alt="LocalAI Hub" width="400"/>
 
-**Run open-source LLMs on any Windows PC — no Docker, no Python, no cloud, no terminal.**
+**Run open-source LLMs on any PC — no Docker, no Python, no cloud, no terminal.**
 
 [![Build](https://github.com/delta574/localai-hub/actions/workflows/build.yml/badge.svg)](https://github.com/delta574/localai-hub/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -23,12 +23,12 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 
 ## ⚡ Quick Start
 
-### Option A: Portable .exe (recommended)
+### Option A: Portable binary (recommended)
 
-1. Download `LocalAI.exe` from the [Actions tab](https://github.com/delta574/localai-hub/actions) (click the latest run, download the artifact).
-2. Create a folder anywhere — desktop, USB drive, doesn't matter.
-3. Drop `LocalAI.exe` into that folder.
-4. Double-click `LocalAI.exe`. A terminal window opens and your browser launches to `http://localhost:8080`.
+1. Download the latest release from the [Releases page](https://github.com/delta574/localai-hub/releases/latest) — `LocalAI-windows-amd64.zip` (Windows) or `LocalAI-*-amd64.tar.gz` (Linux/macOS).
+2. Extract the archive. On Windows 10+, right-click the `.zip` and choose **Extract All**.
+3. Drop the binary (`LocalAI.exe` on Windows, `LocalAI` on Linux/macOS) into a folder.
+4. Double-click the binary. A terminal window opens and your browser launches to `http://localhost:8080`.
 5. In the **Setup Wizard**, click **Install** on any model (the first one is recommended for your PC).
 6. Wait for the download to finish. The wizard closes and you're on the Chat page.
 7. Type a message and press **Enter** (or click **Send**). The AI responds token-by-token.
