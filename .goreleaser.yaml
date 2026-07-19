@@ -19,8 +19,15 @@ builds:
 
 archives:
   - name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
     files:
       - dist/web/**/*
+
+release:
+  extra_files:
+    - glob: ./dist/**/LocalAI.exe
 
 checksum:
   name_template: "checksums.txt"
