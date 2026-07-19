@@ -32,4 +32,12 @@ Thumbs.db
 coverage*
 coverage*.out
 
+# session temporary files
+audit/
+server.err
+*.txt
+*.png
+*.svg
+*.ico
+
 node_modules/

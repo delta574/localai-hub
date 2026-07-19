@@ -53,6 +53,16 @@ var CuratedModels = []Model{
 		Tagline:  "Fastest — Google's tiny model, runs on anything",
 	},
 	{
+		ID:       "qwen2.5-1.5b",
+		Name:     "Qwen2.5 1.5B",
+		HFRepo:   "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+		HFFile:   "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+		SizeGB:   1.0,
+		MinRAMGB: 2,
+		Quality:  "★★★",
+		Tagline:  "Best quality-per-byte — top code & math benchmarks",
+	},
+	{
 		ID:       "qwen3-1.5b",
 		Name:     "Qwen3 1.5B",
 		HFRepo:   "Qwen/Qwen3-1.5B-Instruct-GGUF",
