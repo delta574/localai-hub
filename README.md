@@ -48,7 +48,7 @@ LocalAI Hub is a single-binary desktop application that downloads, manages, and 
 
 - **Single binary** — 3.5 MB `.exe`, zero dependencies. No Electron, no Node.js, no Python runtime.
 - **Auto-setup** — Downloads `llama-server` (inference engine) and models from HuggingFace on first run.
-- **One-click model install** — Pick from 5 curated GGUF models sized for 2–4 GB RAM. Download with progress bar, auto-resume on interruption.
+- **One-click model install** — Pick from 6 curated GGUF models sized for 2–4 GB RAM. Download with progress bar, auto-resume on interruption.
 - **Chat UI** — Streaming token-by-token responses, markdown rendering, conversation history.
 - **Conversation management** — Create, select, and delete conversations. Auto-saved as JSON files.
 - **OpenAI-compatible API** — `POST /v1/chat/completions` — use with any OpenAI client.
@@ -81,6 +81,7 @@ Linux and macOS are also supported (cross-compiled binaries available).
 | Qwen3 3B | ~2.0 GB | 4 GB | ★★★★ |
 | Llama 3.2 3B | ~2.5 GB | 4 GB | ★★★★ |
 | Gemma 3 1B | ~0.7 GB | 2 GB | ★★★ |
+| Qwen2.5 1.5B | ~1.0 GB | 2 GB | ★★★ |
 | Qwen3 1.5B | ~1.0 GB | 2 GB | ★★★ |
 
 All models are GGUF format downloaded directly from HuggingFace Hub.
@@ -272,7 +273,7 @@ localai-hub/
 ## ❓ FAQ
 
 **What models can I run?**
-5 curated GGUF models from 1B to 3.8B parameters. The setup wizard recommends the best one for your machine based on available RAM.
+6 curated GGUF models from 1B to 3.8B parameters. The setup wizard recommends the best one for your machine based on available RAM.
 
 **Does it need internet?**
 Only for the first run (to download `llama-server` and your chosen model). After that, 100% offline.
