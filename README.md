@@ -7,7 +7,7 @@
 [![Build](https://github.com/delta574/localai-hub/actions/workflows/build.yml/badge.svg)](https://github.com/delta574/localai-hub/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go)](https://go.dev)
-[![Windows](https://img.shields.io/badge/Windows-0078D6?logo=windows)](https://github.com/delta574/localai-hub/actions)
+[![Windows](https://badgen.net/badge/Windows/Windows/0078D6?label=)](https://github.com/delta574/localai-hub/actions)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux)](https://github.com/delta574/localai-hub/actions)
 [![macOS](https://img.shields.io/badge/macOS-000000?logo=apple)](https://github.com/delta574/localai-hub/actions)
 
