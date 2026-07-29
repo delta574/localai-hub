@@ -29,7 +29,7 @@
 		"vitest": "^4.1.10"
 	},
 	"dependencies": {
-		"@humanspeak/svelte-markdown": "^1.8.4"
+		"@humanspeak/svelte-markdown": "^1.8.5"
 	},
 	"overrides": {
 		"cookie": "0.7.2"
